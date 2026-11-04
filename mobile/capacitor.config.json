@@ -1,0 +1,6 @@
+{
+  "appId": "vn.timkiemvanban.app",
+  "appName": "Tìm Kiếm Văn Bản",
+  "webDir": "www",
+  "android": { "allowMixedContent": false, "webContentsDebuggingEnabled": false }
+}
