@@ -1,5 +1,8 @@
 name: Build Tim Kiem Van Ban (EXE + APK + HTML)
 
+# Repo chỉ cần 2 file: .github/workflows/build.yml (file này) và web/TimKiemVanBan.html
+# Mã nguồn bản Windows và Android được tạo ngay trong lúc build (nhúng ở dưới).
+
 on:
   push:
     branches: [ main, master ]
@@ -10,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Kiểm tra file giao diện
+        run: |
+          test -s web/TimKiemVanBan.html || { echo "Thiếu file web/TimKiemVanBan.html"; exit 1; }
+          ls -la web/
       - uses: actions/upload-artifact@v4
         with:
           name: TimKiemVanBan-HTML
@@ -22,9 +29,223 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Chép giao diện vào bản Windows
+      - name: Tạo mã nguồn bản Windows
         shell: bash
-        run: mkdir -p desktop/app && cp web/TimKiemVanBan.html desktop/app/index.html
+        run: |
+          mkdir -p "desktop"
+          cat > "desktop/package.json" <<'EOF_TKVB_0'
+          {
+            "name": "timkiemvanban",
+            "version": "1.0.0",
+            "description": "Tim Kiem Van Ban - luu tru va tim kiem van ban offline",
+            "main": "main.js",
+            "author": "Hi",
+            "license": "UNLICENSED",
+            "scripts": { "start": "electron .", "dist": "electron-builder --win portable --x64 --publish never" },
+            "devDependencies": { "electron": "31.7.7", "electron-builder": "24.13.3" },
+            "build": {
+              "appId": "vn.timkiemvanban.desktop",
+              "productName": "TimKiemVanBan",
+              "files": ["main.js", "preload.js", "app/**/*"],
+              "directories": { "output": "dist" },
+              "win": { "target": [{ "target": "portable", "arch": ["x64"] }] },
+              "portable": { "artifactName": "TimKiemVanBan.exe" },
+              "asar": true
+            }
+          }
+          EOF_TKVB_0
+          mkdir -p "desktop"
+          cat > "desktop/main.js" <<'EOF_TKVB_1'
+          // Tìm Kiếm Văn Bản - bản Windows (Electron), chạy offline hoàn toàn, có chia sẻ mạng LAN
+          const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
+          const path = require('path');
+          const fs = require('fs');
+          const http = require('http');
+          const os = require('os');
+
+          let win = null;
+          let dataRoot = null;            // thư mục VanBanLuu đang dùng
+          let ver = 1;                    // tăng mỗi khi dữ liệu thay đổi -> các máy tự đồng bộ
+          let server = null, lanErr = '';
+          const DEF_PORT = 8989;
+
+          const cfgFile = () => path.join(app.getPath('userData'), 'config.json');
+          const readCfg = () => { try { return JSON.parse(fs.readFileSync(cfgFile(), 'utf8')); } catch (e) { return {}; } };
+          const writeCfg = (c) => { fs.mkdirSync(path.dirname(cfgFile()), { recursive: true }); fs.writeFileSync(cfgFile(), JSON.stringify(c, null, 1)); };
+          const exeDir = () => process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(app.getPath('exe'));
+          const lanCfg = () => Object.assign({ enabled: false, port: DEF_PORT, pass: '' }, readCfg().lan || {});
+          const bump = () => { ver++; };
+
+          // chỉ cho phép đọc/ghi bên trong thư mục dữ liệu đã chọn
+          function safe(p) {
+            if (!dataRoot) throw new Error('Chưa chọn thư mục lưu');
+            const r = path.resolve(p), root = path.resolve(dataRoot);
+            if (r !== root && !r.startsWith(root + path.sep)) throw new Error('Đường dẫn ngoài thư mục dữ liệu');
+            return r;
+          }
+          function writeAtomic(f, data) {
+            fs.mkdirSync(path.dirname(f), { recursive: true });
+            const tmp = f + '.' + process.pid + '.tmp';
+            fs.writeFileSync(tmp, typeof data === 'string' ? data : Buffer.from(data));
+            fs.renameSync(tmp, f);
+          }
+          function readFileOrNull(f) { try { return fs.readFileSync(f); } catch (e) { if (e.code === 'ENOENT') return null; throw e; } }
+          function delFile(f) { try { fs.unlinkSync(f); } catch (e) { if (e.code !== 'ENOENT') throw e; } }
+
+          // gộp thay đổi danh mục văn bản (du_lieu.json) – an toàn khi nhiều máy cùng ghi
+          function applyMeta(up, rm) {
+            const f = safe(path.join(dataRoot, 'du_lieu.json'));
+            let list = [];
+            const b = readFileOrNull(f);
+            if (b) { try { list = JSON.parse(b.toString('utf8') || '[]'); } catch (e) { list = []; } }
+            const m = new Map(list.map(d => [d.id, d]));
+            for (const id of rm || []) m.delete(id);
+            for (const d of up || []) if (d && d.id) m.set(d.id, d);
+            writeAtomic(f, JSON.stringify([...m.values()]));
+            bump();
+            return true;
+          }
+
+          /* ---------------- IPC cho giao diện trên máy này ---------------- */
+          ipcMain.handle('info', () => ({ last: readCfg().dataDir || null, exeDir: exeDir(), sep: path.sep }));
+          ipcMain.handle('pickDir', async () => {
+            const r = await dialog.showOpenDialog(win, { title: 'Chọn nơi tạo thư mục VanBanLuu', properties: ['openDirectory', 'createDirectory'] });
+            return r.canceled || !r.filePaths.length ? null : r.filePaths[0];
+          });
+          ipcMain.handle('useDir', (e, root) => {
+            root = path.resolve(root);
+            for (const s of ['', 'files', 'noidung']) fs.mkdirSync(path.join(root, s), { recursive: true });
+            fs.accessSync(root, fs.constants.W_OK);
+            dataRoot = root;
+            const c = readCfg(); c.dataDir = root; writeCfg(c);
+            bump();
+            return true;
+          });
+          ipcMain.handle('read', (e, p, asText) => { const b = readFileOrNull(safe(p)); return b === null ? null : (asText ? b.toString('utf8') : new Uint8Array(b)); });
+          ipcMain.handle('write', (e, p, data) => { writeAtomic(safe(p), data); bump(); return true; });
+          ipcMain.handle('del', (e, p) => { delFile(safe(p)); bump(); return true; });
+          ipcMain.handle('meta', (e, up, rm) => applyMeta(up, rm));
+          ipcMain.handle('ver', () => ver);
+          ipcMain.handle('showInFolder', (e, p) => { shell.showItemInFolder(safe(p)); return true; });
+          ipcMain.handle('lanGet', () => lanStatus());
+          ipcMain.handle('lanSet', async (e, c) => {
+            const cfg = readCfg();
+            cfg.lan = { enabled: !!c.enabled, port: parseInt(c.port) || DEF_PORT, pass: String(c.pass || '') };
+            writeCfg(cfg);
+            await startServer();
+            return lanStatus();
+          });
+
+          /* ---------------- Máy chủ mạng LAN ---------------- */
+          function lanAddrs() {
+            const out = [];
+            for (const list of Object.values(os.networkInterfaces())) for (const a of list || []) if (a.family === 'IPv4' && !a.internal) out.push(a.address);
+            return out;
+          }
+          function lanStatus() { const L = lanCfg(); return { enabled: L.enabled, port: L.port, pass: L.pass, running: !!server, addresses: lanAddrs(), error: lanErr, root: dataRoot }; }
+          function stopServer() { return new Promise(r => { if (!server) return r(); const s = server; server = null; s.close(() => r()); setTimeout(r, 1500); }); }
+          async function startServer() {
+            await stopServer(); lanErr = '';
+            const L = lanCfg();
+            if (!L.enabled) return;
+            await new Promise(res => {
+              const s = http.createServer(handle);
+              s.on('error', e => { lanErr = e.code === 'EADDRINUSE' ? `Cổng ${L.port} đang bị chương trình khác dùng, hãy đổi cổng khác.` : ('Không mở được máy chủ: ' + e.message); server = null; res(); });
+              s.listen(L.port, '0.0.0.0', () => { server = s; res(); });
+            });
+          }
+          function readBody(req, limit) {
+            return new Promise((res, rej) => {
+              const chunks = []; let n = 0;
+              req.on('data', c => { n += c.length; if (n > limit) { rej(new Error('Dữ liệu quá lớn')); req.destroy(); } else chunks.push(c); });
+              req.on('end', () => res(Buffer.concat(chunks)));
+              req.on('error', rej);
+            });
+          }
+          function handle(req, res) {
+            const send = (code, body, type) => {
+              res.writeHead(code, {
+                'Content-Type': type || 'application/json; charset=utf-8',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'X-Pass, Content-Type',
+                'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
+                'Cache-Control': 'no-store'
+              });
+              res.end(body);
+            };
+            const jerr = (code, msg) => send(code, JSON.stringify({ error: msg }));
+            try {
+              if (req.method === 'OPTIONS') return send(204, '');
+              const u = new URL(req.url, 'http://localhost');
+              const P = u.pathname;
+              const L = lanCfg();
+              // trình duyệt máy khác mở http://IP:cổng -> dùng luôn giao diện app
+              if (req.method === 'GET' && (P === '/' || P === '/index.html')) {
+                return send(200, fs.readFileSync(path.join(__dirname, 'app', 'index.html')), 'text/html; charset=utf-8');
+              }
+              if (P === '/api/ping') return send(200, JSON.stringify({ app: 'TimKiemVanBan', needPass: !!L.pass, ready: !!dataRoot }));
+              if (!P.startsWith('/api/')) return jerr(404, 'Không có');
+              let pass = '';
+              try { pass = decodeURIComponent(req.headers['x-pass'] || ''); } catch (e) { pass = ''; }
+              if (L.pass && pass !== L.pass) return jerr(401, 'Sai mật khẩu');
+              if (!dataRoot) return jerr(503, 'Máy chủ chưa chọn thư mục lưu dữ liệu');
+              if (P === '/api/ver') return send(200, JSON.stringify({ ver }));
+              if (P === '/api/file') {
+                const rel = u.searchParams.get('p') || '';
+                const f = safe(path.join(dataRoot, rel));
+                if (req.method === 'GET') { const b = readFileOrNull(f); return b === null ? jerr(404, 'Không có file') : send(200, b, 'application/octet-stream'); }
+                if (req.method === 'PUT') { readBody(req, 600 * 1024 * 1024).then(b => { writeAtomic(f, b); bump(); send(200, '{"ok":true}'); }).catch(e => jerr(500, e.message)); return; }
+                if (req.method === 'DELETE') { delFile(f); bump(); return send(200, '{"ok":true}'); }
+              }
+              if (P === '/api/meta' && req.method === 'POST') {
+                readBody(req, 50 * 1024 * 1024).then(b => { const j = JSON.parse(b.toString('utf8') || '{}'); applyMeta(j.upsert, j.remove); send(200, '{"ok":true}'); }).catch(e => jerr(500, e.message));
+                return;
+              }
+              return jerr(404, 'Không có');
+            } catch (e) { return jerr(500, e.message); }
+          }
+
+          /* ---------------- Cửa sổ ---------------- */
+          function createWindow() {
+            Menu.setApplicationMenu(null);
+            win = new BrowserWindow({
+              width: 1320, height: 900, minWidth: 900, minHeight: 600, show: false,
+              title: 'Tìm Kiếm Văn Bản', backgroundColor: '#eef2f7',
+              webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, spellcheck: false }
+            });
+            win.loadFile(path.join(__dirname, 'app', 'index.html'));
+            win.once('ready-to-show', () => { win.maximize(); win.show(); });
+            win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+            win.webContents.on('will-navigate', (e) => e.preventDefault());
+            win.webContents.on('before-input-event', (e, i) => { if (i.key === 'F12' && i.control && i.shift) win.webContents.toggleDevTools(); });
+          }
+          app.whenReady().then(async () => {
+            // đã bật chia sẻ từ lần trước -> mở máy chủ ngay với thư mục dữ liệu đã dùng
+            const c = readCfg();
+            if (lanCfg().enabled && c.dataDir && fs.existsSync(c.dataDir)) { dataRoot = path.resolve(c.dataDir); await startServer(); }
+            createWindow();
+          });
+          app.on('window-all-closed', () => app.quit());
+          EOF_TKVB_1
+          mkdir -p "desktop"
+          cat > "desktop/preload.js" <<'EOF_TKVB_2'
+          const { contextBridge, ipcRenderer } = require('electron');
+          contextBridge.exposeInMainWorld('electronAPI', {
+            info: () => ipcRenderer.invoke('info'),
+            pickDir: () => ipcRenderer.invoke('pickDir'),
+            useDir: (root) => ipcRenderer.invoke('useDir', root),
+            read: (p, asText) => ipcRenderer.invoke('read', p, asText),
+            write: (p, data) => ipcRenderer.invoke('write', p, data),
+            del: (p) => ipcRenderer.invoke('del', p),
+            meta: (up, rm) => ipcRenderer.invoke('meta', up, rm),
+            ver: () => ipcRenderer.invoke('ver'),
+            showInFolder: (p) => ipcRenderer.invoke('showInFolder', p),
+            lanGet: () => ipcRenderer.invoke('lanGet'),
+            lanSet: (c) => ipcRenderer.invoke('lanSet', c)
+          });
+          EOF_TKVB_2
+          mkdir -p desktop/app
+          cp web/TimKiemVanBan.html desktop/app/index.html
       - name: Cài thư viện
         working-directory: desktop
         run: npm install
@@ -55,19 +276,45 @@ jobs:
           SDKM=$(ls -d $ANDROID_HOME/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)
           echo "sdkmanager: $SDKM"
           yes | "$SDKM" --licenses > /dev/null || true
-      - name: Chép giao diện vào bản Android
-        run: mkdir -p mobile/www && cp web/TimKiemVanBan.html mobile/www/index.html
+      - name: Tạo mã nguồn bản Android
+        run: |
+          mkdir -p "mobile"
+          cat > "mobile/package.json" <<'EOF_TKVB_0'
+          {
+            "name": "timkiemvanban-mobile",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/android": "6.2.3",
+              "@capacitor/cli": "6.2.3",
+              "@capacitor/core": "6.2.3",
+              "@capacitor/filesystem": "6.0.4"
+            }
+          }
+          EOF_TKVB_0
+          mkdir -p "mobile"
+          cat > "mobile/capacitor.config.json" <<'EOF_TKVB_1'
+          {
+            "appId": "vn.timkiemvanban.app",
+            "appName": "Tìm Kiếm Văn Bản",
+            "webDir": "www",
+            "server": { "androidScheme": "http", "cleartext": true },
+            "android": { "allowMixedContent": true, "webContentsDebuggingEnabled": false }
+          }
+          EOF_TKVB_1
+          mkdir -p mobile/www
+          cp web/TimKiemVanBan.html mobile/www/index.html
       - name: Cài Capacitor và tạo dự án Android
         working-directory: mobile
         run: |
           npm install
           npx cap add android
           npx cap sync android
-      - name: Cấu hình quyền lưu trữ, bộ nhớ lớn cho OCR
+      - name: Cấu hình quyền lưu trữ, mạng LAN, bộ nhớ lớn cho OCR
         working-directory: mobile/android/app/src/main
         run: |
-          sed -i 's#<application#<application android:largeHeap="true" android:requestLegacyExternalStorage="true"#' AndroidManifest.xml
-          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />\n</manifest>#' AndroidManifest.xml
+          sed -i 's#<application#<application android:largeHeap="true" android:requestLegacyExternalStorage="true" android:usesCleartextTraffic="true"#' AndroidManifest.xml
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n</manifest>#' AndroidManifest.xml
           cat AndroidManifest.xml
       - name: Build APK
         working-directory: mobile/android
