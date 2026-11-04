@@ -49,7 +49,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
+      - name: Dùng Android SDK có sẵn trên máy build, chấp nhận license
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKM=$(ls -d $ANDROID_HOME/cmdline-tools/*/bin/sdkmanager | sort -V | tail -1)
+          echo "sdkmanager: $SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
       - name: Chép giao diện vào bản Android
         run: mkdir -p mobile/www && cp web/TimKiemVanBan.html mobile/www/index.html
       - name: Cài Capacitor và tạo dự án Android
