@@ -18,7 +18,9 @@ header .sp{flex:1}
 .hbtn.main{background:#fff;color:var(--pri);font-weight:700;border-color:#fff}
 main{max-width:1300px;margin:16px auto;padding:0 16px}
 .card{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:16px}
-.search{display:grid;grid-template-columns:1fr 260px auto;gap:12px;align-items:end}
+.search{display:grid;grid-template-columns:250px 1fr 230px auto;gap:12px;align-items:end}
+select.t{height:auto;cursor:pointer}
+select.bigq{padding:12px 10px}
 label.f{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:600}
 input.t,select.t,textarea.t{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fbfcfe}
 input.t:focus,textarea.t:focus{outline:2px solid #8db8ec;border-color:#5d97dc;background:#fff}
@@ -107,6 +109,27 @@ mark{background:var(--hl);padding:0 1px;border-radius:2px}
 .delbtn:hover{background:#fdecea}
 td.act{width:64px;text-align:center}
 .pdfpages canvas{display:block;margin:0 auto 12px;box-shadow:0 1px 6px rgba(0,0,0,.18);background:#fff;max-width:100%}
+.ov-head{display:flex;align-items:center;gap:10px;margin:4px 2px 10px;flex-wrap:wrap}
+.ov-head h3{margin:0;font-size:14px;color:var(--pri);text-transform:uppercase;letter-spacing:.4px;flex:1}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.fcard{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:14px;display:flex;gap:12px;align-items:center;cursor:pointer;border:2px solid transparent}
+.fcard:hover{border-color:#b9d1ef}.fcard.on{border-color:var(--pri);background:#f4f8fe}
+.fcard .fi{font-size:30px}.fcard .fx{flex:1;min-width:0}.fcard b{display:block;font-size:14.5px}.fcard span{font-size:13px;color:var(--muted)}
+.fcard .btn{padding:7px 10px;font-size:13px}
+.recent{margin-bottom:16px}.recent h3{margin:0 0 8px;font-size:14px;color:var(--ok)}
+.ra{padding:8px 10px;border-radius:8px;background:#f3faf5;margin-bottom:6px;cursor:pointer;font-size:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.ra:hover{background:#e4f4e9}.ra .tm{color:var(--ok);font-weight:600;white-space:nowrap}
+.tmtag{font-size:12px;color:#5b6f8f;margin-top:3px}
+.tmrow{background:#f4f8fe;border:1px solid #cfe0f5;border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.tmrow select{font-weight:600;color:var(--pri)}
+.tmlist .it{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #edf1f6}
+.tmlist .it input{flex:1}.tmlist .it .n{font-size:12px;color:var(--muted);white-space:nowrap;min-width:70px;text-align:right}
+.lan-sec{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.lan-sec h3{margin:0 0 8px;font-size:15px}
+.lan-addr{font-family:Consolas,monospace;font-size:16px;font-weight:700;color:var(--pri);background:#eef4fc;padding:6px 10px;border-radius:6px;margin:4px 0;display:inline-block}
+.lan-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#9aa6b6;margin-right:5px;vertical-align:1px}
+.lan-dot.on{background:#3ddc84;box-shadow:0 0 0 3px rgba(61,220,132,.25)}.lan-dot.off{background:#ff6b5e}
+.row2{display:grid;grid-template-columns:1fr 110px;gap:10px}
 .note{font-size:13px;background:#fff8e1;border:1px solid #f3dc8f;color:#6d5300;padding:8px 12px;border-radius:8px;margin-bottom:12px}
 .choice{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .choice .btn{text-align:left;padding:13px 16px}
@@ -115,6 +138,7 @@ td.act{width:64px;text-align:center}
 .toast.on{opacity:1}
 .queue{font-size:13px;color:var(--pri);font-weight:600}
 @media(max-width:640px){
+ .row2{grid-template-columns:1fr 90px}.fgrid{grid-template-columns:1fr}
  table.res thead{display:none}
  table.res,table.res tbody{display:block}
  tr.row{display:grid;grid-template-columns:30px 1fr auto;gap:2px 8px;padding:10px 10px 12px;border-bottom:1px solid #e3e8f0}
@@ -141,6 +165,8 @@ td.act{width:64px;text-align:center}
   <h1>🔎 TÌM KIẾM VĂN BẢN</h1>
   <span class="store" id="storeLabel">Chưa chọn nơi lưu</span>
   <span class="sp"></span>
+  <button class="hbtn" id="btnLan"><span class="lan-dot" id="lanDot"></span>Mạng LAN</button>
+  <button class="hbtn" id="btnTm">📁 Thư mục</button>
   <button class="hbtn" id="btnSample">Nạp văn bản mẫu</button>
   <button class="hbtn" id="btnStore">Đổi nơi lưu</button>
   <button class="hbtn main" id="btnAdd">＋ Thêm văn bản</button>
@@ -149,6 +175,10 @@ td.act{width:64px;text-align:center}
 <main>
   <div class="card">
     <div class="search">
+      <div>
+        <label class="f" for="tmSel">📁 Tìm trong thư mục</label>
+        <select class="t bigq" id="tmSel"><option value="">Tất cả thư mục</option></select>
+      </div>
       <div>
         <label class="f" for="q">Nội dung cần tìm (số văn bản, tên/trích yếu, hoặc một đoạn nội dung)</label>
         <input class="t bigq" id="q" placeholder='VD: kỷ luật đảng viên · 296-QĐ/TW · "kết luận thanh tra"' autocomplete="off">
@@ -196,6 +226,8 @@ td.act{width:64px;text-align:center}
       <input type="file" id="file" multiple accept=".docx,.pdf,.jpg,.jpeg,.png,.bmp,.webp,.txt" hidden>
     </div>
     <div class="status" id="addStatus"></div>
+    <div class="tmrow"><label class="f" for="fTm">📁 Lưu văn bản vào thư mục</label>
+      <div style="display:flex;gap:8px"><select class="t" id="fTm"></select><button type="button" class="btn sec" id="btnNewTm" style="white-space:nowrap">＋ Thư mục mới</button></div></div>
     <div class="grid3">
       <div><label class="f">Số văn bản</label><input class="t" id="fSo" placeholder="VD: 84/2025/QH15"></div>
       <div><label class="f">Ngày phát hành</label><input class="t" id="fNgay" placeholder="dd/mm/yyyy"></div>
@@ -232,6 +264,22 @@ td.act{width:64px;text-align:center}
     <button class="btn sec" id="vEdit">✎ Sửa thông tin</button>
     <button class="btn" data-close="mView">Đóng</button>
   </div>
+</div></div>
+
+<!-- Folder manager -->
+<div class="mask" id="mTm"><div class="modal sm">
+  <div class="mh"><h2>📁 Thư mục văn bản theo chuyên đề</h2><button class="x" data-close="mTm">×</button></div>
+  <div class="mb">
+    <div class="tmlist" id="tmList"></div>
+    <div style="display:flex;gap:8px;margin-top:14px"><input class="t" id="tmNew" placeholder="Tên thư mục mới, VD: Văn bản công tác dân vận"><button class="btn" id="btnTmAdd" style="white-space:nowrap">＋ Thêm</button></div>
+    <div class="status" id="tmMsg" style="margin-top:8px"></div>
+  </div>
+</div></div>
+
+<!-- LAN -->
+<div class="mask" id="mLan"><div class="modal sm">
+  <div class="mh"><h2>🌐 Mạng LAN – dùng chung dữ liệu, không cần Internet</h2><button class="x" data-close="mLan">×</button></div>
+  <div class="mb" id="lanBody"></div>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -659,15 +707,20 @@ class FsStore{
   async delText(id,ext){try{await this.nd.removeEntry(id+'.'+ext)}catch(e){}}
   async load(){try{const f=await (await this.dir.getFileHandle('du_lieu.json')).getFile();const t=await f.text();return t.trim()?JSON.parse(t):[]}catch(e){if(e.name==='NotFoundError')return[];throw e}}
   async save(list){const w=await (await this.dir.getFileHandle('du_lieu.json',{create:true})).createWritable();await w.write(JSON.stringify(list));await w.close()}
-  async putFile(n,b){const w=await (await this.files.getFileHandle(n,{create:true})).createWritable();await w.write(b);await w.close()}
-  async getFile(n){return (await this.files.getFileHandle(n)).getFile()}
-  async delFile(n){try{await this.files.removeEntry(n)}catch(e){}}
+  // file gốc nằm trong files\<Tên thư mục>\...
+  async sub(n,create){const parts=n.split('/');let d=this.files;for(const x of parts.slice(0,-1))d=await d.getDirectoryHandle(x,{create});return[d,parts[parts.length-1]]}
+  async putFile(n,b){const[d,f]=await this.sub(n,true);const w=await (await d.getFileHandle(f,{create:true})).createWritable();await w.write(b);await w.close()}
+  async getFile(n){try{const[d,f]=await this.sub(n,false);return await (await d.getFileHandle(f)).getFile()}catch(e){return null}}
+  async delFile(n){try{const[d,f]=await this.sub(n,false);await d.removeEntry(f)}catch(e){}}
+  async readRoot(n){try{return await (await (await this.dir.getFileHandle(n)).getFile()).text()}catch(e){return null}}
+  async writeRoot(n,t){const w=await (await this.dir.getFileHandle(n,{create:true})).createWritable();await w.write(t);await w.close()}
 }
 class IdbStore{
   constructor(){this.kind='idb';this.label='💾 Lưu trong trình duyệt'}
   async init(){} async load(){return (await idbGet('kv','docs'))||[]} async save(l){await idbPut('kv','docs',l)}
   async putFile(n,b){await idbPut('files',n,b)} async getFile(n){return idbGet('files',n)} async delFile(n){await idbDel('files',n)}
   async putText(id,ext,s){await idbPut('files','nd:'+id+'.'+ext,s)} async getText(id,ext){return (await idbGet('files','nd:'+id+'.'+ext))??null} async delText(id,ext){await idbDel('files','nd:'+id+'.'+ext)}
+  async readRoot(n){return (await idbGet('kv','root:'+n))??null} async writeRoot(n,t){await idbPut('kv','root:'+n,t)}
 }
 // danh mục (du_lieu.json) chỉ chứa thông tin văn bản, không chứa nội dung -> mở/lưu nhanh dù có hàng nghìn văn bản
 // ---- EXE (Windows): đọc/ghi thẳng vào thư mục trên ổ đĩa qua Electron ----
@@ -683,6 +736,33 @@ class ExeStore{
   async putFile(n,b){await electronAPI.write(this.p('files',n),new Uint8Array(await b.arrayBuffer()))}
   async getFile(n){const u=await electronAPI.read(this.p('files',n),false);return u?new Blob([u]):null}
   async delFile(n){await electronAPI.del(this.p('files',n))}
+  async readRoot(n){return electronAPI.read(this.p(n),true)} async writeRoot(n,t){await electronAPI.write(this.p(n),t)}
+  // gộp thay đổi danh mục ngay tại máy chủ (an toàn khi nhiều máy LAN cùng ghi)
+  async applyMeta(up,rm){await electronAPI.meta(up,rm)}
+  async ver(){return electronAPI.ver()}
+}
+// ---- Máy khách LAN: dùng dữ liệu của máy chủ (bản exe đang bật chia sẻ) ----
+class RemoteStore{
+  constructor(base,pass){this.base=base.replace(/\/+$/,'');this.pass=pass||'';this.kind='remote';this.label='🌐 Máy chủ '+this.base.replace(/^https?:\/\//,'')}
+  async req(method,path,body,as){
+    let r;try{r=await fetch(this.base+path,{method,body,cache:'no-store',headers:this.pass?{'X-Pass':encodeURIComponent(this.pass)}:{}})}
+    catch(e){throw new Error('Không kết nối được máy chủ '+this.base.replace(/^https?:\/\//,'')+'. Kiểm tra máy chủ đã bật app và bật chia sẻ LAN, cùng mạng, đúng IP/cổng.')}
+    if(r.status===401)throw new Error('Sai mật khẩu máy chủ LAN.');
+    if(r.status===404&&as!=='json')return null;
+    if(!r.ok)throw new Error('Máy chủ báo lỗi '+r.status+': '+(await r.text()).slice(0,200));
+    return as==='text'?r.text():as==='blob'?r.blob():as==='json'?r.json():r}
+  f(p){return '/api/file?p='+encodeURIComponent(p)}
+  async init(){const j=await this.req('GET','/api/ping',null,'json');if(j.app!=='TimKiemVanBan')throw new Error('Địa chỉ này không phải máy chủ Tìm Kiếm Văn Bản');if(!j.ready)throw new Error('Máy chủ chưa chọn thư mục lưu dữ liệu.');await this.ver()}
+  async ver(){return (await this.req('GET','/api/ver',null,'json')).ver}
+  async load(){const t=await this.req('GET',this.f('du_lieu.json'),null,'text');return t&&t.trim()?JSON.parse(t):[]}
+  async putText(id,ext,s){await this.req('PUT',this.f('noidung/'+id+'.'+ext),s)}
+  async getText(id,ext){return this.req('GET',this.f('noidung/'+id+'.'+ext),null,'text')}
+  async delText(id,ext){await this.req('DELETE',this.f('noidung/'+id+'.'+ext))}
+  async putFile(n,b){await this.req('PUT',this.f('files/'+n),b)}
+  async getFile(n){return this.req('GET',this.f('files/'+n),null,'blob')}
+  async delFile(n){await this.req('DELETE',this.f('files/'+n))}
+  async readRoot(n){return this.req('GET',this.f(n),null,'text')} async writeRoot(n,t){await this.req('PUT',this.f(n),t)}
+  async applyMeta(up,rm){await this.req('POST','/api/meta',JSON.stringify({upsert:up,remove:rm}))}
 }
 // ---- APK (Android): lưu vào bộ nhớ máy qua Capacitor Filesystem ----
 const blobToB64=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(b)});
@@ -704,12 +784,64 @@ class ApkStore{
   async putFile(n,b){await this.FS.writeFile(this.o('files/'+n,{data:await blobToB64(b),recursive:true}))}
   async getFile(n){try{const r=await this.FS.readFile(this.o('files/'+n));return await (await fetch('data:application/octet-stream;base64,'+r.data)).blob()}catch(e){return null}}
   async delFile(n){try{await this.FS.deleteFile(this.o('files/'+n))}catch(e){}}
+  async readRoot(n){return this.getAny(n)} async writeRoot(n,t){await this.FS.writeFile(this.o(n,{data:t,encoding:'utf8',recursive:true}))}
 }
 async function useExe(root){const I=await electronAPI.info();store=new ExeStore(root,I.sep);await store.init();await afterStore();toast('Đang lưu tại: '+root)}
 async function useApk(dk){const s=new ApkStore(dk);try{await s.init()}catch(e){throw new Error((dk==='DOCUMENTS'?'Không ghi được vào thư mục Documents (chưa cấp quyền?). Hãy thử chọn "Bộ nhớ riêng của ứng dụng". ':'')+(e.message||e))}
   store=s;localStorage.setItem('vb_apk_dir',dk);await afterStore();toast('Đang lưu tại: '+s.label.slice(2))}
 const clean=d=>{const o={};for(const k in d)if(k[0]!=='_'&&k!=='noiDung'&&k!=='html')o[k]=d[k];return o};
 async function persist(){await store.save(docs.map(clean))}
+// lưu / xóa thông tin văn bản trong danh mục
+async function saveMeta(...ds){const t=Date.now();ds.forEach(d=>d.upd=t);if(store.applyMeta)await store.applyMeta(ds.map(clean),[]);else await persist()}
+async function removeMeta(d){if(store.applyMeta)await store.applyMeta([],[d.id]);else await persist()}
+
+/* ============ Thư mục chuyên đề ============ */
+const DEFAULT_TM=[{id:'qlcb',name:'Văn bản quản lý cán bộ'},{id:'tdkt',name:'Văn bản thi đua khen thưởng'},{id:'dang',name:'Văn bản Đảng - Chi bộ'},{id:'ktgs',name:'Văn bản kiểm tra giám sát Đảng'},{id:'cchc',name:'Văn bản cải cách hành chính'}];
+let folders=[];
+const tmName=id=>(folders.find(f=>f.id===id)||{}).name||'Chưa phân thư mục';
+const noTm=d=>!d.tm||!folders.some(f=>f.id===d.tm);
+const safeName=s=>(s||'').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,' ').trim().slice(0,80)||'Khac';
+async function loadFolders(){
+  let l=null;try{const t=await store.readRoot('thu_muc.json');l=t?JSON.parse(t):null}catch(e){}
+  if(!Array.isArray(l)||!l.length){l=DEFAULT_TM.map(x=>({...x}));try{await store.writeRoot('thu_muc.json',JSON.stringify(l))}catch(e){console.error(e)}}
+  folders=l;renderFolderSelects();
+}
+async function saveFolders(){await store.writeRoot('thu_muc.json',JSON.stringify(folders));renderFolderSelects()}
+function renderFolderSelects(){
+  const cnt={};let none=0;for(const d of docs){if(noTm(d))none++;else cnt[d.tm]=(cnt[d.tm]||0)+1}
+  const s=$('#tmSel'),v=s.value;
+  s.innerHTML=`<option value="">📚 Tất cả thư mục (${docs.length})</option>`+folders.map(f=>`<option value="${esc(f.id)}">${esc(f.name)} (${cnt[f.id]||0})</option>`).join('')+(none?`<option value="_none">Chưa phân thư mục (${none})</option>`:'');
+  s.value=[...s.options].some(o=>o.value===v)?v:'';
+  const ft=$('#fTm'),fv=ft.value;
+  ft.innerHTML=`<option value="">— Chọn thư mục để lưu —</option>`+folders.map(f=>`<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('');
+  if([...ft.options].some(o=>o.value===fv))ft.value=fv;
+}
+function openTm(pickForAdd){
+  tmPick=!!pickForAdd;$('#tmMsg').textContent='';$('#tmNew').value='';
+  const cnt=id=>docs.filter(d=>d.tm===id).length;
+  $('#tmList').innerHTML=folders.map((f,i)=>`<div class="it"><span>📁</span><input class="t" value="${esc(f.name)}" data-i="${i}"><span class="n">${cnt(f.id)} văn bản</span><button class="btn sec" data-ren="${i}" title="Lưu tên mới">Lưu</button><button class="delbtn" data-deltm="${i}" title="Xóa thư mục">🗑</button></div>`).join('')||'<p>Chưa có thư mục.</p>';
+  open('mTm');setTimeout(()=>$('#tmNew').focus(),50);
+}
+let tmPick=false;
+$('#btnTm').onclick=()=>{if(store)openTm(false)};
+$('#btnNewTm').onclick=()=>openTm(true);
+const tmMsg=(t,err)=>{$('#tmMsg').textContent=t;$('#tmMsg').className='status'+(err?' err':'')};
+$('#btnTmAdd').onclick=async()=>{
+  const n=squash($('#tmNew').value);if(!n){tmMsg('⚠ Nhập tên thư mục.',true);return}
+  if(folders.some(f=>f.name.toLowerCase()===n.toLowerCase())){tmMsg('⚠ Đã có thư mục tên này.',true);return}
+  const f={id:'tm'+Date.now().toString(36),name:n};folders.push(f);
+  try{await saveFolders();if(tmPick){$('#fTm').value=f.id;close('mTm')}else{openTm(false);tmMsg('✔ Đã thêm thư mục '+n)}runSearch()}catch(e){tmMsg('⚠ '+e.message,true)}
+};
+$('#tmNew').onkeydown=e=>{if(e.key==='Enter')$('#btnTmAdd').click()};
+$('#tmList').onclick=async e=>{
+  const r=e.target.closest('[data-ren]'),dl=e.target.closest('[data-deltm]');
+  try{
+    if(r){const i=+r.dataset.ren,n=squash($('#tmList input[data-i="'+i+'"]').value);if(!n)return tmMsg('⚠ Tên không được trống.',true);folders[i].name=n;await saveFolders();tmMsg('✔ Đã đổi tên.');runSearch()}
+    if(dl){const i=+dl.dataset.deltm,f=folders[i],c=docs.filter(d=>d.tm===f.id).length;
+      if(c){tmMsg(`⚠ Thư mục "${f.name}" còn ${c} văn bản. Hãy xóa hoặc chuyển các văn bản sang thư mục khác (nút Sửa thông tin) trước.`,true);return}
+      if(!confirm('Xóa thư mục "'+f.name+'"?'))return;folders.splice(i,1);await saveFolders();openTm(tmPick);runSearch()}
+  }catch(err){tmMsg('⚠ '+err.message,true)}
+};
 async function saveContent(d){
   await store.putText(d.id,'txt',d.noiDung||'');
   if(d.html){await store.putText(d.id,'html',d.html);d.hasHtml=true}else{if(d.hasHtml)await store.delText(d.id,'html');d.hasHtml=false}
@@ -746,9 +878,10 @@ async function afterStore(){
   docs=await store.load();
   // chuyển dữ liệu kiểu cũ (nội dung nằm trong du_lieu.json) sang thư mục noidung
   const old=docs.filter(d=>typeof d.noiDung==='string');
-  if(old.length){for(const d of old)await saveContent(d);await persist()}
+  if(old.length){for(const d of old)await saveContent(d);await saveMeta(...old)}
   docs.forEach(d=>{if(typeof d.noiDung==='string'){d.html=undefined;prep(d)}else{d.noiDung='';d._pending=true;prep(d)}});
-  refreshLabel();close('mStore');runSearch();loadAllText().then(()=>{if(!docs.some(d=>d._pending))warmIndex()});
+  await loadFolders();recentAdds=[];showAll=false;
+  refreshLabel();close('mStore');close('mLan');runSearch();startSync();loadAllText().then(()=>{if(!docs.some(d=>d._pending))warmIndex()});
 }
 async function showStoreDialog(first){
   const box=$('#storeChoice');box.innerHTML='';$('#storeMsg').textContent='';$('#storeMsg').className='status';
@@ -759,6 +892,7 @@ async function showStoreDialog(first){
   const add=(html,cls,fn)=>{const b=document.createElement('button');b.className='btn '+(cls||'');b.innerHTML=html;b.onclick=async()=>{try{await fn()}catch(e){if(e.name!=='AbortError'){$('#storeMsg').textContent='⚠ '+e.message;$('#storeMsg').className='status err'}}};box.appendChild(b)};
   if(fsOk&&last)add(`Tiếp tục dùng thư mục đã chọn: <b>${esc(last.name)}${last.name===APP_DIR?'':'\\'+APP_DIR}</b><small>Dữ liệu cũ sẽ được mở lại</small>`,'',()=>useFolder(last));
   if(fsOk)add(`📂 Chọn thư mục ${last?'khác':''}...<small>Chọn ổ đĩa/thư mục, app sẽ tạo thư mục VanBanLuu bên trong (nên chọn ổ D:\\ hoặc thư mục Documents)</small>`,last?'sec':'',async()=>{const h=await window.showDirectoryPicker({id:'vbluu',mode:'readwrite'});await useFolder(h)});
+  lanChoices(add);
   add(`💾 Lưu tạm trong trình duyệt${mode==='idb'?' (đang dùng)':''}<small>${fsOk?'Không cần chọn thư mục, nhưng dữ liệu nằm trong trình duyệt này':'Trình duyệt này không hỗ trợ chọn thư mục – hãy dùng Chrome hoặc Edge để lưu ra thư mục'}</small>`,'sec',useIdb);
   if(!first&&store){const b=document.createElement('button');b.className='btn sec';b.textContent='Hủy';b.onclick=()=>close('mStore');box.appendChild(b)}
   open('mStore');
@@ -776,8 +910,14 @@ async function showNativeStoreDialog(first,box){
     if(last!=='DOCUMENTS')add(`📱 Bộ nhớ máy: <b>Documents/${APP_DIR}</b><small>Xem và chép được bằng ứng dụng Quản lý file, chuyển sang máy khác dễ dàng</small>`,last?'sec':'',()=>useApk('DOCUMENTS'));
     if(last!=='DATA')add(`🔒 Bộ nhớ riêng của ứng dụng<small>Ứng dụng khác không xem được; dữ liệu mất khi gỡ ứng dụng</small>`,'sec',()=>useApk('DATA'));
   }
+  lanChoices(add);
   if(!first&&store){const b=document.createElement('button');b.className='btn sec';b.textContent='Hủy';b.onclick=()=>close('mStore');box.appendChild(b)}
   open('mStore');
+}
+function lanChoices(add){
+  const sv=lanSaved();
+  if(sv&&sv.host)add(`🌐 Dùng dữ liệu máy chủ LAN: <b>${esc(sv.host)}${/:\d+$/.test(sv.host)?'':':'+sv.port}</b><small>Dùng chung kho văn bản với các máy trong mạng nội bộ</small>`,'sec',()=>connectLan(sv.host,sv.port,sv.pass));
+  add(`🌐 Kết nối máy chủ trong mạng LAN…<small>Nhập IP máy tính đang chạy app (bản exe) có bật chia sẻ</small>`,'sec',()=>openLan());
 }
 $('#btnStore').onclick=()=>showStoreDialog(false);
 
@@ -880,9 +1020,13 @@ function runSearch(){
   let pool=docs;
   if(D&&D.bad){$('#summary').innerHTML='⚠ Ngày không hợp lệ. Nhập dạng <b>30/5/2025</b>, <b>5/2025</b>, <b>2025</b> hoặc <b>2024-2025</b>.';$('#results').innerHTML='';return}
   if(D)pool=docs.filter(d=>d.ngay&&d.ngay>=D.from&&d.ngay<=D.to);
+  const TM=$('#tmSel').value;
+  if(TM)pool=pool.filter(d=>TM==='_none'?noTm(d):d.tm===TM);
   lastQ=Q.phrase?Q:null;
-  const dateLbl=D?` ban hành <b>${D.label}</b>`:'';
-  if(!docs.length){$('#summary').innerHTML='';$('#results').innerHTML=`<div class="card empty"><div style="font-size:42px">📂</div><p>Chưa có văn bản nào trong thư mục lưu.</p><p><button class="btn" onclick="openAdd()">＋ Thêm văn bản</button> &nbsp; <button class="btn sec" onclick="loadSamples()">Nạp văn bản mẫu để thử</button></p></div>`;return}
+  const dateLbl=(D?` ban hành <b>${D.label}</b>`:'')+(TM?` trong thư mục <b>${esc(TM==='_none'?'Chưa phân thư mục':tmName(TM))}</b>`:'');
+  if(!docs.length){renderOverview(TM);$('#summary').innerHTML='Chưa có văn bản nào.';$('#results').insertAdjacentHTML('afterbegin',`<div class="card empty" style="margin-bottom:16px"><div style="font-size:42px">📂</div><p>Chưa có văn bản nào. Bấm <b>Thêm văn bản</b>, chọn thư mục để lưu rồi chọn file.</p><p><button class="btn" onclick="openAdd()">＋ Thêm văn bản</button> &nbsp; <button class="btn sec" onclick="loadSamples()">Nạp văn bản mẫu để thử</button></p></div>`);return}
+  // chưa nhập điều kiện tìm: chỉ hiện tổng quan thư mục + văn bản vừa thêm
+  if(!Q.phrase&&!D&&!showAll){renderOverview(TM);return}
   if(!Q.phrase){
     const list=[...pool].sort(byDate);
     $('#summary').innerHTML=(D?`Có <b>${list.length}</b> văn bản${dateLbl}.`:`Tất cả <b>${list.length}</b> văn bản (mới nhất trước). Nhập nội dung hoặc ngày để lọc.`)+idxNote();
@@ -913,6 +1057,25 @@ function runSearch(){
   if(!res.length)html=`<div class="card empty">Không tìm thấy văn bản nào phù hợp. Thử bỏ dấu ngoặc kép, bật “Tìm không dấu”, hoặc rút gọn từ khóa.</div>`;
   $('#results').innerHTML=html;bindRows();
 }
+let recentAdds=[],showAll=false;
+function renderOverview(TM){
+  const cnt={};let none=0;for(const d of docs){if(noTm(d))none++;else cnt[d.tm]=(cnt[d.tm]||0)+1}
+  $('#summary').innerHTML=`Kho có <b>${docs.length}</b> văn bản trong <b>${folders.length}</b> thư mục. Chọn thư mục (nếu cần), rồi nhập nội dung hoặc ngày phát hành để tìm.`+idxNote();
+  let h='';
+  const ra=recentAdds.filter(d=>docs.includes(d));
+  if(ra.length){h+=`<div class="card recent"><h3>✔ Văn bản vừa thêm (${ra.length})</h3>`+ra.slice(-10).reverse().map(d=>`<div class="ra" data-ra="${docs.indexOf(d)}"><span class="loai">${esc(d.loai||'VB')}</span><b>${esc(d.so||'(không số)')}</b><span>${esc(d.trichYeu||'')}</span><span class="tm">→ 📁 ${esc(tmName(d.tm))}</span></div>`).join('')+`</div>`}
+  const card=(id,name,n)=>`<div class="fcard ${TM===id?'on':''}" data-pick="${esc(id)}"><div class="fi">📁</div><div class="fx"><b>${esc(name)}</b><span>${n} văn bản</span></div><button class="btn sec" data-showall="${esc(id)}">Xem văn bản</button></div>`;
+  h+=`<div class="ov-head"><h3>Thư mục văn bản</h3><button class="btn sec" data-showall="" style="padding:7px 12px;font-size:13px">Xem tất cả ${docs.length} văn bản</button><button class="btn sec" id="ovNewTm" style="padding:7px 12px;font-size:13px">＋ Thư mục mới</button></div>`;
+  h+=`<div class="fgrid">`+folders.map(f=>card(f.id,f.name,cnt[f.id]||0)).join('')+(none?card('_none','Chưa phân thư mục',none):'')+`</div>`;
+  $('#results').innerHTML=h;groups=[];
+}
+$('#results').addEventListener('click',e=>{
+  const ra=e.target.closest('[data-ra]');if(ra){viewDoc(+ra.dataset.ra);return}
+  const sa=e.target.closest('[data-showall]');if(sa){$('#tmSel').value=sa.dataset.showall;showAll=true;runSearch();return}
+  if(e.target.closest('#ovNewTm')){openTm(false);return}
+  const pk=e.target.closest('[data-pick]');if(pk){$('#tmSel').value=$('#tmSel').value===pk.dataset.pick?'':pk.dataset.pick;runSearch();$('#q').focus()}
+});
+$('#tmSel').onchange=()=>{showAll=false;runSearch()};
 const byDate=(a,b)=>(b.ngay||'').localeCompare(a.ngay||'');
 function ftBadge(d){if(!d.fileType)return'';const c={pdf:'ft-pdf',docx:'ft-docx',img:'ft-img',txt:'ft-txt'}[d.fileType]||'ft-txt';return`<span class="ftype ${c}">${d.fileType.toUpperCase()}</span>`}
 function table(rows,kind){
@@ -928,7 +1091,7 @@ function table(rows,kind){
     const tyHtml=r.meta&&lastQ?hlMeta(d.trichYeu):esc(d.trichYeu);
     const soHtml=r.meta&&lastQ?hlMeta(d.so):esc(d.so||'—');
     h+=`<tr class="row" data-doc="${idx}"><td class="stt">${k+1}</td><td class="so">${soHtml}</td><td class="ngay">${fmtD(d.ngay)||'—'}</td>
-      <td>${badge}<span class="loai">${esc(d.loai||'VB')}</span><span class="ten">${tyHtml}</span>${snips}</td><td class="cq hide">${esc(d.coQuan)}</td><td class="hide">${ftBadge(d)}</td><td class="act"><button class="delbtn" data-del="${idx}" title="Xóa toàn bộ văn bản này khỏi hệ thống">🗑 Xóa</button></td></tr>`;
+      <td>${badge}<span class="loai">${esc(d.loai||'VB')}</span><span class="ten">${tyHtml}</span>${snips}</td><td class="cq hide">${esc(d.coQuan)}<div class="tmtag">📁 ${esc(tmName(d.tm))}</div></td><td class="hide">${ftBadge(d)}</td><td class="act"><button class="delbtn" data-del="${idx}" title="Xóa toàn bộ văn bản này khỏi hệ thống">🗑 Xóa</button></td></tr>`;
   });
   return h+'</tbody></table>';
 }
@@ -945,15 +1108,15 @@ async function deleteDoc(d,fromViewer){
   if(!confirm(`XÓA VĂN BẢN KHỎI HỆ THỐNG?\n\n${name}\n${d.trichYeu||''}\n\nToàn bộ thông tin, nội dung và file gốc (${d.fileName||'không có file'}) sẽ bị xóa vĩnh viễn, không khôi phục được.`))return;
   try{
     if(d.filePath)await store.delFile(d.filePath);await delContent(d);
-    const i=docs.indexOf(d);if(i>=0)docs.splice(i,1);await persist();
+    const i=docs.indexOf(d);if(i>=0)docs.splice(i,1);await removeMeta(d);
     if(fromViewer)close('mView');refreshLabel();runSearch();toast('🗑 Đã xóa văn bản '+(d.so||''));
   }catch(e){console.error(e);alert('Không xóa được: '+e.message)}
 }
-let tmr;const live=()=>{clearTimeout(tmr);tmr=setTimeout(runSearch,280)};
+let tmr;const live=()=>{showAll=false;clearTimeout(tmr);tmr=setTimeout(runSearch,280)};
 $('#q').oninput=live;$('#d').oninput=live;$('#optNoAccent').onchange=runSearch;
 $('#q').onkeydown=$('#d').onkeydown=e=>{if(e.key==='Enter'){clearTimeout(tmr);runSearch()}};
 $('#btnSearch').onclick=runSearch;
-$('#btnClear').onclick=()=>{$('#q').value='';$('#d').value='';runSearch();$('#q').focus()};
+$('#btnClear').onclick=()=>{$('#q').value='';$('#d').value='';showAll=false;runSearch();$('#q').focus()};
 
 /* ============ Xem văn bản ============ */
 function hlElement(el,Q,na){
@@ -973,7 +1136,7 @@ async function viewDoc(i,pIdx){
   const na=$('#optNoAccent').checked;
   const N=nd(d,na);
   let body=d.mau?`<div class="note">📌 Văn bản mẫu (bản tóm lược một số điều) nạp sẵn để chạy thử. Hãy thêm bản đầy đủ từ file Word/PDF chính thức khi dùng thật.</div>`:'';
-  body+=`<div class="meta"><div><span>Số văn bản</span><b>${esc(d.so||'—')}</b></div><div><span>Ngày phát hành</span><b>${fmtD(d.ngay)||'—'}</b></div><div><span>Loại</span><b>${esc(d.loai||'—')}</b></div><div><span>Cơ quan ban hành</span><b>${esc(d.coQuan||'—')}</b></div><div class="full"><span>Trích yếu</span><b>${esc(d.trichYeu||'—')}</b></div></div>`;
+  body+=`<div class="meta"><div><span>Số văn bản</span><b>${esc(d.so||'—')}</b></div><div><span>Ngày phát hành</span><b>${fmtD(d.ngay)||'—'}</b></div><div><span>Loại</span><b>${esc(d.loai||'—')}</b></div><div><span>Cơ quan ban hành</span><b>${esc(d.coQuan||'—')}</b></div><div class="full"><span>Trích yếu</span><b>${esc(d.trichYeu||'—')}</b></div><div class="full"><span>Thư mục</span><b>📁 ${esc(tmName(d.tm))}</b></div></div>`;
   body+=`<div class="tabs"><button class="tab on" data-t="txt">Nội dung</button>${d.filePath?`<button class="tab" data-t="orig">Bản gốc (${esc(d.fileName)})</button>`:''}</div><div id="vTxt" class="doc"></div><div id="vOrig" class="orig" style="display:none"></div>`;
   $('#vBody').innerHTML=body;
   const hasH=d._paras.findIndex(p=>/^(LUẬT|NGHỊ ĐỊNH|THÔNG TƯ|QUYẾT ĐỊNH|QUY ĐỊNH|HƯỚNG DẪN|NGHỊ QUYẾT|CHỈ THỊ|KẾ HOẠCH|CÔNG VĂN|THÔNG BÁO|BÁO CÁO)$/.test(p.t));
@@ -1017,7 +1180,7 @@ $('#vDown').onclick=async()=>{
   try{const f=await store.getFile(cur.filePath);const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=cur.fileName;a.click()}catch(e){toast('Không mở được file gốc')}};
 $('#vEdit').onclick=()=>{close('mView');openAdd(cur)};
 $('#vDel').onclick=()=>deleteDoc(cur,true);
-const refreshLabel=()=>$('#storeLabel').textContent=store.label+' · '+docs.length+' văn bản'+(idxState?` · đang nạp ${idxState.done}/${idxState.total}`:'');
+const refreshLabel=()=>{$('#storeLabel').textContent=store.label+' · '+docs.length+' văn bản'+(idxState?` · đang nạp ${idxState.done}/${idxState.total}`:'');renderFolderSelects()};
 
 /* ============ Đọc file & nhận dạng thông tin ============ */
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='';
@@ -1273,7 +1436,10 @@ function openAdd(d){
   editing=d||null;queue=[];qi=0;curFile=null;curPdf=null;
   $('#addTitle').textContent=d?'Sửa thông tin văn bản':'Thêm văn bản';$('#drop').style.display=d?'none':'';
   $('#queueInfo').textContent='';$('#btnSkip').style.display='none';$('#btnOcr').style.display='none';
-  fillForm(d||{});$('#fFile').value=d?d.fileName||'':'';st(d?'':'Chọn file văn bản để app tự đọc nội dung, hoặc nhập tay các ô bên dưới rồi bấm Lưu.');
+  fillForm(d||{});$('#fFile').value=d?d.fileName||'':'';
+  renderFolderSelects();
+  const lastTm=localStorage.getItem('vb_last_tm'),selTm=$('#tmSel').value;
+  $('#fTm').value=d?(noTm(d)?'':d.tm):(selTm&&selTm!=='_none'?selTm:(folders.some(f=>f.id===lastTm)?lastTm:''));st(d?'':'Chọn file văn bản để app tự đọc nội dung, hoặc nhập tay các ô bên dưới rồi bấm Lưu.');
   open('mAdd');
 }
 $('#btnAdd').onclick=()=>openAdd();
@@ -1322,17 +1488,23 @@ $('#btnSave').onclick=async()=>{
   if(ngayRaw&&!ngay){st('⚠ Ngày phát hành phải dạng dd/mm/yyyy, VD 25/06/2025',true);return}
   const data={so:squash($('#fSo').value),ngay,loai:squash($('#fLoai').value).toUpperCase(),coQuan:squash($('#fCq').value),trichYeu:squash($('#fTy').value)};const C=getContent();data.noiDung=C.text.trim();data.html=C.text.trim()?C.html:'';
   if(!data.so&&!data.trichYeu&&!data.noiDung){st('⚠ Cần nhập ít nhất số văn bản, trích yếu hoặc nội dung.',true);return}
+  data.tm=$('#fTm').value;
+  if(!data.tm){st('⚠ Chọn thư mục để lưu văn bản (ô "Lưu văn bản vào thư mục").',true);$('#fTm').focus();return}
+  localStorage.setItem('vb_last_tm',data.tm);
   const btn=$('#btnSave');btn.disabled=true;
   try{
-    if(editing){Object.assign(editing,data);delete editing.mau;editing._pending=false;prep(editing);await saveContent(editing)}
+    if(editing){
+      // đổi thư mục: chuyển luôn file gốc sang thư mục mới
+      if(editing.filePath&&editing.tm!==data.tm){const b=await store.getFile(editing.filePath);if(b){const np=safeName(tmName(data.tm))+'/'+editing.filePath.split('/').pop();await store.putFile(np,b);await store.delFile(editing.filePath);editing.filePath=np}}
+      Object.assign(editing,data);delete editing.mau;editing._pending=false;prep(editing);await saveContent(editing)}
     else{
       const dup=data.so&&docs.find(d=>d.so&&d.so.toLowerCase()===data.so.toLowerCase());
       if(dup&&!confirm(`Đã có văn bản số ${data.so}. Vẫn lưu thêm bản này?`)){btn.disabled=false;return}
       const d={id:newId(),...data,addedAt:new Date().toISOString()};
-      if(curFile){const k=fileKind(curFile.name);d.fileName=curFile.name;d.fileType=k==='doc'?'docx':k;d.filePath=d.id+'_'+curFile.name.replace(/[\\/:*?"<>|]/g,'_');st('Đang lưu file gốc…');await store.putFile(d.filePath,curFile)}
-      await saveContent(d);prep(d);docs.push(d);
+      if(curFile){const k=fileKind(curFile.name);d.fileName=curFile.name;d.fileType=k==='doc'?'docx':k;d.filePath=safeName(tmName(data.tm))+'/'+d.id+'_'+curFile.name.replace(/[\\/:*?"<>|]/g,'_');st('Đang lưu file gốc…');await store.putFile(d.filePath,curFile)}
+      await saveContent(d);prep(d);docs.push(d);recentAdds.push(d);
     }
-    await persist();refreshLabel();toast('✔ Đã lưu văn bản '+(data.so||''));
+    await saveMeta(editing||docs[docs.length-1]);refreshLabel();toast('✔ Đã lưu văn bản '+(data.so||'')+' vào thư mục '+tmName(data.tm));
     if(editing){close('mAdd');runSearch()}else if(queue.length&&qi<queue.length-1)nextInQueue();else{close('mAdd');runSearch()}
   }catch(e){console.error(e);st('⚠ Không lưu được: '+e.message,true)}
   finally{btn.disabled=false}
@@ -1341,15 +1513,100 @@ $('#btnSave').onclick=async()=>{
 /* ============ Văn bản mẫu ============ */
 async function loadSamples(){
   const S=JSON.parse($('#samplesData').textContent);let n=0;
-  for(const s of S){if(docs.some(d=>d.so===s.so))continue;const d={id:newId(),so:s.so,ngay:s.ngay,loai:s.loai,coQuan:s.coQuan,trichYeu:s.trichYeu,noiDung:s.text,mau:true,addedAt:new Date().toISOString()};await saveContent(d);prep(d);docs.push(d);n++}
-  await persist();refreshLabel();runSearch();toast(n?`Đã nạp ${n} văn bản mẫu về kiểm tra, giám sát, thanh tra`:'Các văn bản mẫu đã có sẵn');
+  for(const s of S){if(docs.some(d=>d.so===s.so))continue;const d={id:newId(),so:s.so,ngay:s.ngay,loai:s.loai,coQuan:s.coQuan,trichYeu:s.trichYeu,noiDung:s.text,mau:true,tm:folders.some(f=>f.id==='ktgs')?'ktgs':(folders[0]||{}).id,addedAt:new Date().toISOString()};await saveContent(d);prep(d);docs.push(d);recentAdds.push(d);n++}
+  if(n)await saveMeta(...docs.slice(-n));refreshLabel();runSearch();toast(n?`Đã nạp ${n} văn bản mẫu về kiểm tra, giám sát, thanh tra`:'Các văn bản mẫu đã có sẵn');
 }
 $('#btnSample').onclick=()=>store?loadSamples():showStoreDialog(true);
 window.openAdd=openAdd;window.loadSamples=loadSamples;
 
+/* ============ Mạng LAN ============ */
+const LAN_PORT=8989;
+let lanTimer=null,lastVer=null,syncing=false;
+function setLanDot(ok){$('#lanDot').className='lan-dot'+(ok===true?' on':ok===false?' off':'')}
+function startSync(){
+  clearInterval(lanTimer);lastVer=null;
+  if(!store||!store.ver){setLanDot(null);return}
+  const S=store;
+  const tick=async()=>{if(store!==S){clearInterval(lanTimer);return}if(document.hidden||syncing)return;
+    try{const v=await S.ver();if(store.kind==='remote')setLanDot(true);
+      if(lastVer===null)lastVer=v;else if(v!==lastVer){lastVer=v;await syncFromStore()}}
+    catch(e){if(store.kind==='remote'){setLanDot(false);$('#storeLabel').textContent=store.label+' · ⚠ mất kết nối máy chủ'}}};
+  tick();lanTimer=setInterval(tick,4000);
+}
+// nhận thay đổi do máy khác trong mạng LAN thêm / sửa / xóa
+async function syncFromStore(){
+  syncing=true;
+  try{
+    const list=await store.load();const old=new Map(docs.map(d=>[d.id,d]));let changed=list.length!==docs.length;const next=[];
+    for(const m of list){const o=old.get(m.id);
+      if(o&&(o.upd||0)===(m.upd||0)&&o.tm===m.tm){next.push(o);continue}
+      changed=true;const d=Object.assign({},m);d.noiDung='';d._pending=true;d.html=undefined;prep(d);next.push(d)}
+    const fOld=JSON.stringify(folders);await loadFolders();if(fOld!==JSON.stringify(folders))changed=true;
+    if(!changed)return;
+    docs=next;refreshLabel();await loadAllText();
+    if(!$('#mAdd').classList.contains('on')&&!$('#mView').classList.contains('on'))runSearch();
+    toast('🔄 Đã cập nhật dữ liệu mới từ mạng LAN');
+  }catch(e){console.error(e)}finally{syncing=false}
+}
+async function connectLan(host,port,pass){
+  host=squash(host).replace(/^https?:\/\//,'').replace(/\/.*$/,'');if(!host)throw new Error('Nhập địa chỉ IP máy chủ, VD 10.71.5.20');
+  let base;if(/:\d+$/.test(host))base='http://'+host;else base='http://'+host+':'+(parseInt(port)||LAN_PORT);
+  if(location.protocol.startsWith('http')&&base===location.origin)base=location.origin;
+  const s=new RemoteStore(base,pass);await s.init();
+  store=s;localStorage.setItem('vb_lan',JSON.stringify({host,port:parseInt(port)||LAN_PORT,pass}));
+  await afterStore();toast('🌐 Đã kết nối máy chủ '+base.replace('http://',''));
+}
+function lanSaved(){try{return JSON.parse(localStorage.getItem('vb_lan')||'null')}catch(e){return null}}
+async function openLan(msg){
+  const B=$('#lanBody'),sv=lanSaved()||{};let h='';
+  if(ENV==='exe'){
+    const L=await electronAPI.lanGet();
+    h+=`<div class="lan-sec"><h3>🖥 Máy này làm máy chủ (chia sẻ dữ liệu cho máy khác)</h3>
+      <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="lanOn" ${L.enabled?'checked':''}> Bật chia sẻ trong mạng LAN</label>
+      <div class="row2" style="margin-top:10px"><div><label class="f">Mật khẩu (để trống nếu không cần)</label><input class="t" id="lanPass" value="${esc(L.pass||'')}"></div><div><label class="f">Cổng</label><input class="t" id="lanPort" value="${L.port||LAN_PORT}"></div></div>
+      <div style="margin-top:10px"><button class="btn" id="lanSave">Lưu cài đặt máy chủ</button></div>
+      <div id="lanSt" style="margin-top:10px">${lanStHtml(L)}</div>
+      <p style="font-size:12.5px;color:var(--muted);margin:8px 0 0">Máy chủ dùng thư mục dữ liệu đang mở trên máy này${L.root?': <b>'+esc(L.root)+'</b>':''}. Máy chủ phải luôn mở app. Lần đầu bật, Windows hỏi tường lửa → chọn <b>Allow / Cho phép</b>.</p></div>`;
+  }
+  const isRemote=store&&store.kind==='remote';
+  h+=`<div class="lan-sec"><h3>🔗 Dùng dữ liệu của máy chủ trong mạng LAN</h3>`+
+    (isRemote?`<p>Đang dùng dữ liệu của <span class="lan-addr">${esc(store.base.replace('http://',''))}</span></p><button class="btn danger" id="lanDis">Ngắt kết nối, dùng dữ liệu trên máy này</button>`:
+    `<div class="row2"><div><label class="f">Địa chỉ IP máy chủ</label><input class="t" id="lanHost" placeholder="VD: 10.71.5.20" value="${esc(sv.host||'')}"></div><div><label class="f">Cổng</label><input class="t" id="lanCPort" value="${esc(String(sv.port||LAN_PORT))}"></div></div>
+     <div style="margin-top:10px"><label class="f">Mật khẩu máy chủ (nếu có)</label><input class="t" id="lanCPass" value="${esc(sv.pass||'')}"></div>
+     <div style="margin-top:10px"><button class="btn" id="lanCon">🔗 Kết nối</button></div>`)+
+    `<div class="status" id="lanMsg" style="margin-top:8px"></div></div>`;
+  B.innerHTML=h;
+  ['#lanPass','#lanPort','#lanHost','#lanCPort','#lanCPass'].forEach(s=>{const el=$(s);if(el)addClear(el)});
+  const msgEl=$('#lanMsg'),say=(t,err)=>{msgEl.textContent=t;msgEl.className='status'+(err?' err':'')};
+  if(msg)say(msg,true);
+  if($('#lanSave'))$('#lanSave').onclick=async()=>{
+    const port=parseInt($('#lanPort').value);if(!(port>1023&&port<65536)){$('#lanSt').innerHTML='<span class="status err">⚠ Cổng phải từ 1024 đến 65535</span>';return}
+    const L=await electronAPI.lanSet({enabled:$('#lanOn').checked,port,pass:$('#lanPass').value.trim()});$('#lanSt').innerHTML=lanStHtml(L);};
+  if($('#lanCon'))$('#lanCon').onclick=async()=>{say('Đang kết nối…');try{await connectLan($('#lanHost').value,$('#lanCPort').value,$('#lanCPass').value.trim())}catch(e){say('⚠ '+e.message,true)}};
+  if($('#lanHost'))$('#lanHost').onkeydown=e=>{if(e.key==='Enter')$('#lanCon').click()};
+  if($('#lanDis'))$('#lanDis').onclick=()=>{localStorage.removeItem('vb_lan');clearInterval(lanTimer);store=null;docs=[];setLanDot(null);close('mLan');showStoreDialog(true)};
+  open('mLan');
+}
+function lanStHtml(L){
+  if(L.error)return`<span class="status err">⚠ ${esc(L.error)}</span>`;
+  if(!L.running)return'<span style="color:var(--muted);font-size:14px">Chia sẻ đang tắt.</span>';
+  return`<div style="font-size:14px">✔ Đang chia sẻ. Máy khác bấm <b>Mạng LAN</b> → nhập địa chỉ dưới đây (hoặc mở bằng trình duyệt <b>http://địa chỉ</b>):</div>`+((L.addresses||[]).map(x=>`<span class="lan-addr">${esc(x)}:${L.port}</span>`).join(' ')||'<i>(không tìm thấy địa chỉ mạng)</i>')+(L.pass?'<div style="font-size:13px;margin-top:4px">Có đặt mật khẩu – máy khác phải nhập đúng mật khẩu.</div>':'');
+}
+$('#btnLan').onclick=()=>openLan();
+
 /* ============ Khởi động ============ */
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['mView','mAdd'].forEach(close)});
-showStoreDialog(true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['mView','mAdd','mTm','mLan'].forEach(close)});
+(async function boot(){
+  // mở bằng trình duyệt từ máy chủ LAN (http://IP:cổng) -> tự dùng dữ liệu máy chủ
+  if(ENV==='web'&&location.protocol.startsWith('http')){
+    try{const j=await (await fetch('/api/ping',{cache:'no-store'})).json();
+      if(j&&j.app==='TimKiemVanBan'){const sv=lanSaved()||{};
+        try{const s=new RemoteStore(location.origin,sv.host===location.host?sv.pass:'');await s.init();store=s;await afterStore();return}
+        catch(e){await openLan(e.message);$('#lanHost').value=location.hostname;$('#lanCPort').value=location.port||'80';return}}
+    }catch(e){}
+  }
+  showStoreDialog(true);
+})();
 </script>
 </body>
 </html>
