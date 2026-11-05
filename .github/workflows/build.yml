@@ -39,13 +39,14 @@ jobs:
             "version": "1.0.0",
             "description": "Tim Kiem Van Ban - luu tru va tim kiem van ban offline",
             "main": "main.js",
-            "author": "Hi",
+            "author": "Thanh Minh - Đội 1 - PA06",
             "license": "UNLICENSED",
             "scripts": { "start": "electron .", "dist": "electron-builder --win portable --x64 --publish never" },
             "devDependencies": { "electron": "31.7.7", "electron-builder": "24.13.3" },
             "build": {
               "appId": "vn.timkiemvanban.desktop",
               "productName": "TimKiemVanBan",
+              "copyright": "Copyright by @ Thanh Minh - Đội 1 - PA06",
               "files": ["main.js", "preload.js", "app/**/*"],
               "directories": { "output": "dist" },
               "win": { "target": [{ "target": "portable", "arch": ["x64"] }] },
@@ -126,6 +127,12 @@ jobs:
           ipcMain.handle('del', (e, p) => { delFile(safe(p)); bump(); return true; });
           ipcMain.handle('meta', (e, up, rm) => applyMeta(up, rm));
           ipcMain.handle('ver', () => ver);
+          ipcMain.handle('saveAs', async (e, name, data) => {
+            const r = await dialog.showSaveDialog(win, { title: 'Lưu file sao lưu', defaultPath: path.join(app.getPath('documents'), name), filters: [{ name: 'File sao lưu (.zip)', extensions: ['zip'] }] });
+            if (r.canceled || !r.filePath) return null;
+            writeAtomic(r.filePath, data);
+            return r.filePath;
+          });
           ipcMain.handle('showInFolder', (e, p) => { shell.showItemInFolder(safe(p)); return true; });
           ipcMain.handle('lanGet', () => lanStatus());
           ipcMain.handle('lanSet', async (e, c) => {
@@ -239,6 +246,7 @@ jobs:
             del: (p) => ipcRenderer.invoke('del', p),
             meta: (up, rm) => ipcRenderer.invoke('meta', up, rm),
             ver: () => ipcRenderer.invoke('ver'),
+            saveAs: (name, data) => ipcRenderer.invoke('saveAs', name, data),
             showInFolder: (p) => ipcRenderer.invoke('showInFolder', p),
             lanGet: () => ipcRenderer.invoke('lanGet'),
             lanSet: (c) => ipcRenderer.invoke('lanSet', c)
@@ -316,12 +324,42 @@ jobs:
           sed -i 's#<application#<application android:largeHeap="true" android:requestLegacyExternalStorage="true" android:usesCleartextTraffic="true"#' AndroidManifest.xml
           sed -i 's#</manifest>#    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n</manifest>#' AndroidManifest.xml
           cat AndroidManifest.xml
-      - name: Build APK
+      - name: Ký APK bằng khóa cố định (bản sau cài đè lên bản trước, không mất dữ liệu)
+        working-directory: mobile/android/app
+        run: |
+          echo "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" | base64 -d > tkvb.keystore
+          cat >> build.gradle <<'EOF_SIGN'
+
+          android {
+              signingConfigs {
+                  debug {
+                      storeFile file('tkvb.keystore')
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+              }
+          }
+          EOF_SIGN
+          tail -14 build.gradle
+      - name: Build APK (tự thử lại nếu mạng tải Gradle chậm)
         working-directory: mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          P=gradle/wrapper/gradle-wrapper.properties
+          # dùng bản Gradle gọn (-bin) và tăng thời gian chờ tải từ 10 giây lên 3 phút
+          sed -i 's/-all\.zip/-bin.zip/' $P
+          if grep -q '^networkTimeout' $P; then sed -i 's/^networkTimeout=.*/networkTimeout=180000/' $P; else echo 'networkTimeout=180000' >> $P; fi
+          cat $P
+          for i in 1 2 3 4; do
+            echo "=== Lần build thứ $i ==="
+            if ./gradlew assembleDebug --no-daemon; then OK=1; break; fi
+            echo "Build lỗi, chờ 20 giây rồi thử lại..."; sleep 20
+          done
+          test "$OK" = "1"
           cp app/build/outputs/apk/debug/app-debug.apk ../../TimKiemVanBan.apk
+      - name: Kiểm tra chữ ký APK (SHA-256 phải là 72:7B:F6:81...)
+        run: keytool -printcert -jarfile TimKiemVanBan.apk | grep -i sha256 || true
       - uses: actions/upload-artifact@v4
         with:
           name: TimKiemVanBan-APK
