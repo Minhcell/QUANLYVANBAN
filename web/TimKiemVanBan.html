@@ -130,6 +130,19 @@ td.act{width:64px;text-align:center}
 .lan-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#9aa6b6;margin-right:5px;vertical-align:1px}
 .lan-dot.on{background:#3ddc84;box-shadow:0 0 0 3px rgba(61,220,132,.25)}.lan-dot.off{background:#ff6b5e}
 .row2{display:grid;grid-template-columns:1fr 110px;gap:10px}
+.brand{display:flex;flex-direction:column;line-height:1.15}
+.brand .copy{font-size:12px;opacity:.88;font-style:italic;letter-spacing:.2px;margin-top:2px}
+.addnote{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#eaf7ee;border:1px solid #b9e2c6;color:#1b5e33;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14.5px}
+.addnote .vw{margin-left:auto;padding:6px 12px;font-size:13px}
+.addnote .xa{background:none;border:0;font-size:20px;color:#5b7f69;line-height:1;padding:0 2px}
+.tmtoggle{display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;box-shadow:var(--shadow);padding:11px 14px;cursor:pointer;user-select:none;font-weight:600;color:var(--pri)}
+.tmtoggle input{width:18px;height:18px;cursor:pointer}
+.tmtoggle .cnt{font-weight:400;color:var(--muted);font-size:13.5px}
+.tmtoggle .arr{margin-left:auto;transition:transform .2s;color:var(--muted)}
+.tmtoggle.on .arr{transform:rotate(180deg)}
+.tmbody{margin-top:10px}
+.dupitem{background:#fff6f5;border:1px solid #f1c4bf;border-radius:8px;padding:9px 12px;margin-top:8px;font-size:14px}
+.dupitem .why{font-size:12.5px;color:var(--red);font-weight:600;margin-bottom:3px}
 .note{font-size:13px;background:#fff8e1;border:1px solid #f3dc8f;color:#6d5300;padding:8px 12px;border-radius:8px;margin-bottom:12px}
 .choice{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .choice .btn{text-align:left;padding:13px 16px}
@@ -162,12 +175,13 @@ td.act{width:64px;text-align:center}
 </head>
 <body>
 <header>
-  <h1>🔎 TÌM KIẾM VĂN BẢN</h1>
+  <div class="brand"><h1>🔎 TÌM KIẾM VĂN BẢN</h1><div class="copy">Copyright by @ Thanh Minh - Đội 1 - PA06</div></div>
   <span class="store" id="storeLabel">Chưa chọn nơi lưu</span>
   <span class="sp"></span>
   <button class="hbtn" id="btnLan"><span class="lan-dot" id="lanDot"></span>Mạng LAN</button>
   <button class="hbtn" id="btnTm">📁 Thư mục</button>
   <button class="hbtn" id="btnSample">Nạp văn bản mẫu</button>
+  <button class="hbtn" id="btnBak">💾 Sao lưu</button>
   <button class="hbtn" id="btnStore">Đổi nơi lưu</button>
   <button class="hbtn main" id="btnAdd">＋ Thêm văn bản</button>
 </header>
@@ -280,6 +294,31 @@ td.act{width:64px;text-align:center}
 <div class="mask" id="mLan"><div class="modal sm">
   <div class="mh"><h2>🌐 Mạng LAN – dùng chung dữ liệu, không cần Internet</h2><button class="x" data-close="mLan">×</button></div>
   <div class="mb" id="lanBody"></div>
+</div></div>
+
+<!-- Backup / restore -->
+<div class="mask" id="mBak"><div class="modal sm">
+  <div class="mh"><h2>💾 Sao lưu / Khôi phục dữ liệu</h2><button class="x" data-close="mBak">×</button></div>
+  <div class="mb">
+    <div class="lan-sec"><h3>⬇ Tạo bản sao lưu</h3>
+      <p style="margin:0 0 10px;font-size:14px">Xuất toàn bộ kho (danh mục, thư mục, nội dung và file gốc) ra <b>1 file .zip</b>. Nên sao lưu trước khi cài lại hoặc nâng cấp app, đổi máy.</p>
+      <button class="btn" id="bakMake">⬇ Tạo file sao lưu</button></div>
+    <div class="lan-sec"><h3>⬆ Khôi phục từ file sao lưu</h3>
+      <p style="margin:0 0 10px;font-size:14px">Chọn file .zip đã sao lưu. Văn bản đã có (cùng mã) được giữ nguyên, chỉ thêm các văn bản còn thiếu – không ghi đè, không mất dữ liệu hiện tại.</p>
+      <button class="btn sec" id="bakLoad">⬆ Chọn file sao lưu (.zip)</button>
+      <input type="file" id="bakFile" accept=".zip,application/zip" hidden></div>
+    <div class="status" id="bakMsg"></div>
+  </div>
+</div></div>
+
+<!-- Duplicate warning -->
+<div class="mask" id="mDup" style="z-index:70"><div class="modal sm">
+  <div class="mh"><h2>⚠ Văn bản bị trùng</h2></div>
+  <div class="mb" id="dupBody"></div>
+  <div class="mf">
+    <button class="btn danger" id="dupNo">✖ Không lưu</button>
+    <button class="btn" id="dupYes">✔ Đồng ý lưu</button>
+  </div>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -880,8 +919,8 @@ async function afterStore(){
   const old=docs.filter(d=>typeof d.noiDung==='string');
   if(old.length){for(const d of old)await saveContent(d);await saveMeta(...old)}
   docs.forEach(d=>{if(typeof d.noiDung==='string'){d.html=undefined;prep(d)}else{d.noiDung='';d._pending=true;prep(d)}});
-  await loadFolders();recentAdds=[];showAll=false;
-  refreshLabel();close('mStore');close('mLan');runSearch();startSync();loadAllText().then(()=>{if(!docs.some(d=>d._pending))warmIndex()});
+  await loadFolders();recentAdds=[];lastAdd=null;showAll=false;
+  refreshLabel();close('mStore');close('mLan');runSearch();startSync();loadAllText().then(()=>{if(!docs.some(d=>d._pending))warmIndex();bgOcrStart()});
 }
 async function showStoreDialog(first){
   const box=$('#storeChoice');box.innerHTML='';$('#storeMsg').textContent='';$('#storeMsg').className='status';
@@ -1057,19 +1096,31 @@ function runSearch(){
   if(!res.length)html=`<div class="card empty">Không tìm thấy văn bản nào phù hợp. Thử bỏ dấu ngoặc kép, bật “Tìm không dấu”, hoặc rút gọn từ khóa.</div>`;
   $('#results').innerHTML=html;bindRows();
 }
-let recentAdds=[],showAll=false;
+let recentAdds=[],showAll=false,lastAdd=null;
+// thông báo ngắn: lần thêm gần nhất (1 văn bản / nhóm văn bản) vào thư mục nào
+function noteAdd(list,label){if(!list.length)return;lastAdd={list,label};}
+let tmOpen=false;try{tmOpen=localStorage.getItem('vb_tm_open')==='1'}catch(e){}
 function renderOverview(TM){
   const cnt={};let none=0;for(const d of docs){if(noTm(d))none++;else cnt[d.tm]=(cnt[d.tm]||0)+1}
   $('#summary').innerHTML=`Kho có <b>${docs.length}</b> văn bản trong <b>${folders.length}</b> thư mục. Chọn thư mục (nếu cần), rồi nhập nội dung hoặc ngày phát hành để tìm.`+idxNote();
   let h='';
-  const ra=recentAdds.filter(d=>docs.includes(d));
-  if(ra.length){h+=`<div class="card recent"><h3>✔ Văn bản vừa thêm (${ra.length})</h3>`+ra.slice(-10).reverse().map(d=>`<div class="ra" data-ra="${docs.indexOf(d)}"><span class="loai">${esc(d.loai||'VB')}</span><b>${esc(d.so||'(không số)')}</b><span>${esc(d.trichYeu||'')}</span><span class="tm">→ 📁 ${esc(tmName(d.tm))}</span></div>`).join('')+`</div>`}
+  if(lastAdd){const L=lastAdd.list.filter(d=>docs.includes(d));
+    if(L.length){const d=L[L.length-1];const tms=[...new Set(L.map(x=>tmName(x.tm)))];
+      const what=L.length===1?`1 văn bản <b>${esc([d.loai,d.so].filter(Boolean).join(' ')||'(không số)')}</b>`:`<b>${L.length}</b> ${lastAdd.label||'văn bản'}`;
+      h+=`<div class="addnote"><span>✔ Đã thêm ${what} vào thư mục <b>📁 ${esc(tms.join(', '))}</b></span>${L.length===1?`<button class="btn sec vw" data-ra="${docs.indexOf(d)}">Xem</button>`:''}<button class="xa" data-xa title="Ẩn thông báo">×</button></div>`}}
   const card=(id,name,n)=>`<div class="fcard ${TM===id?'on':''}" data-pick="${esc(id)}"><div class="fi">📁</div><div class="fx"><b>${esc(name)}</b><span>${n} văn bản</span></div><button class="btn sec" data-showall="${esc(id)}">Xem văn bản</button></div>`;
-  h+=`<div class="ov-head"><h3>Thư mục văn bản</h3><button class="btn sec" data-showall="" style="padding:7px 12px;font-size:13px">Xem tất cả ${docs.length} văn bản</button><button class="btn sec" id="ovNewTm" style="padding:7px 12px;font-size:13px">＋ Thư mục mới</button></div>`;
-  h+=`<div class="fgrid">`+folders.map(f=>card(f.id,f.name,cnt[f.id]||0)).join('')+(none?card('_none','Chưa phân thư mục',none):'')+`</div>`;
+  const nAll=folders.length+(none?1:0);
+  h+=`<label class="tmtoggle ${tmOpen?'on':''}"><input type="checkbox" id="tmTgl" ${tmOpen?'checked':''}> 📁 Hiện các thư mục văn bản <span class="cnt">(${nAll} thư mục · ${docs.length} văn bản)</span><span class="arr">▼</span></label>`;
+  if(tmOpen){
+    h+=`<div class="tmbody"><div class="ov-head"><h3>Thư mục văn bản</h3><button class="btn sec" data-showall="" style="padding:7px 12px;font-size:13px">Xem tất cả ${docs.length} văn bản</button><button class="btn sec" id="ovNewTm" style="padding:7px 12px;font-size:13px">＋ Thư mục mới</button></div>`;
+    h+=`<div class="fgrid">`+folders.map(f=>card(f.id,f.name,cnt[f.id]||0)).join('')+(none?card('_none','Chưa phân thư mục',none):'')+`</div></div>`;
+  }
   $('#results').innerHTML=h;groups=[];
+  const t=$('#tmTgl');if(t)t.onchange=()=>{tmOpen=t.checked;try{localStorage.setItem('vb_tm_open',tmOpen?'1':'0')}catch(e){}renderOverview($('#tmSel').value)};
 }
 $('#results').addEventListener('click',e=>{
+  if(e.target.closest('[data-xa]')){lastAdd=null;renderOverview($('#tmSel').value);return}
+  if(e.target.closest('#tmTgl')||e.target.closest('.tmtoggle'))return;
   const ra=e.target.closest('[data-ra]');if(ra){viewDoc(+ra.dataset.ra);return}
   const sa=e.target.closest('[data-showall]');if(sa){$('#tmSel').value=sa.dataset.showall;showAll=true;runSearch();return}
   if(e.target.closest('#ovNewTm')){openTm(false);return}
@@ -1077,7 +1128,7 @@ $('#results').addEventListener('click',e=>{
 });
 $('#tmSel').onchange=()=>{showAll=false;runSearch()};
 const byDate=(a,b)=>(b.ngay||'').localeCompare(a.ngay||'');
-function ftBadge(d){if(!d.fileType)return'';const c={pdf:'ft-pdf',docx:'ft-docx',img:'ft-img',txt:'ft-txt'}[d.fileType]||'ft-txt';return`<span class="ftype ${c}">${d.fileType.toUpperCase()}</span>`}
+function ftBadge(d){if(!d.fileType)return'';if(bgPending(d))return`<span class="badge b-cont" title="Các trang còn lại đang được đọc chữ ở chế độ nền">⏳ ${d.ocrDone}/${d.ocrTotal} trang</span>`;const c={pdf:'ft-pdf',docx:'ft-docx',img:'ft-img',txt:'ft-txt'}[d.fileType]||'ft-txt';return`<span class="ftype ${c}">${d.fileType.toUpperCase()}</span>`}
 function table(rows,kind){
   let h=`<table class="res"><thead><tr><th>STT</th><th>Số văn bản</th><th>Ngày phát hành</th><th>Tên văn bản / Trích yếu</th><th class="hide">Cơ quan ban hành</th><th class="hide">File</th><th>Xóa</th></tr></thead><tbody>`;
   const IX=new Map(docs.map((d,i)=>[d,i]));
@@ -1135,7 +1186,8 @@ async function viewDoc(i,pIdx){
   $('#vTitle').textContent=(d.loai?d.loai+' ':'')+(d.so?'số '+d.so:'');
   const na=$('#optNoAccent').checked;
   const N=nd(d,na);
-  let body=d.mau?`<div class="note">📌 Văn bản mẫu (bản tóm lược một số điều) nạp sẵn để chạy thử. Hãy thêm bản đầy đủ từ file Word/PDF chính thức khi dùng thật.</div>`:'';
+  let body=bgPending(d)?`<div class="note">⏳ Văn bản dài: app đã đọc ${d.ocrDone}/${d.ocrTotal} trang, các trang còn lại đang được đọc chữ ở chế độ nền và sẽ tự bổ sung vào nội dung.</div>`:'';
+  body+=d.mau?`<div class="note">📌 Văn bản mẫu (bản tóm lược một số điều) nạp sẵn để chạy thử. Hãy thêm bản đầy đủ từ file Word/PDF chính thức khi dùng thật.</div>`:'';
   body+=`<div class="meta"><div><span>Số văn bản</span><b>${esc(d.so||'—')}</b></div><div><span>Ngày phát hành</span><b>${fmtD(d.ngay)||'—'}</b></div><div><span>Loại</span><b>${esc(d.loai||'—')}</b></div><div><span>Cơ quan ban hành</span><b>${esc(d.coQuan||'—')}</b></div><div class="full"><span>Trích yếu</span><b>${esc(d.trichYeu||'—')}</b></div><div class="full"><span>Thư mục</span><b>📁 ${esc(tmName(d.tm))}</b></div></div>`;
   body+=`<div class="tabs"><button class="tab on" data-t="txt">Nội dung</button>${d.filePath?`<button class="tab" data-t="orig">Bản gốc (${esc(d.fileName)})</button>`:''}</div><div id="vTxt" class="doc"></div><div id="vOrig" class="orig" style="display:none"></div>`;
   $('#vBody').innerHTML=body;
@@ -1180,7 +1232,7 @@ $('#vDown').onclick=async()=>{
   try{const f=await store.getFile(cur.filePath);const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=cur.fileName;a.click()}catch(e){toast('Không mở được file gốc')}};
 $('#vEdit').onclick=()=>{close('mView');openAdd(cur)};
 $('#vDel').onclick=()=>deleteDoc(cur,true);
-const refreshLabel=()=>{$('#storeLabel').textContent=store.label+' · '+docs.length+' văn bản'+(idxState?` · đang nạp ${idxState.done}/${idxState.total}`:'');renderFolderSelects()};
+const refreshLabel=()=>{$('#storeLabel').textContent=store.label+' · '+docs.length+' văn bản'+(idxState?` · đang nạp ${idxState.done}/${idxState.total}`:'')+bgNote();renderFolderSelects()};
 
 /* ============ Đọc file & nhận dạng thông tin ============ */
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='';
@@ -1330,23 +1382,39 @@ async function pdfTextLayer(pdf){
 async function renderPage(pdf,n,scale){const pg=await pdf.getPage(n);const vp=pg.getViewport({scale});const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);await pg.render({canvasContext:ctx,viewport:vp,annotationMode:0}).promise;return c}
 
 /* --- OCR tiếng Việt chạy offline (dữ liệu đóng gói sẵn trong file) --- */
-let ocrPool=null;
+let ocrPool=null,ocrPoolP=null,ocrIdle=[];const ocrQ={hi:[],lo:[]};
+// số luồng OCR chạy song song: điện thoại 2 (máy yếu 1), máy tính tối đa 4
+function ocrThreads(){const c=navigator.hardwareConcurrency||2;if(ENV==='apk')return c>=6?2:1;return Math.max(1,Math.min(4,c-1))}
 function blobOf(id,type){const el=document.getElementById(id);if(!el)throw new Error('Thiếu bộ OCR trong file ứng dụng');return URL.createObjectURL(new Blob([el.textContent],{type}))}
 function b64ToBytes(b){const s=atob(b.trim());const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
-async function getOcrPool(st){
-  if(ocrPool)return ocrPool;
+function getOcrPool(st){
+  if(ocrPool)return Promise.resolve(ocrPool);
+  return ocrPoolP||(ocrPoolP=makeOcrPool(st||(()=>{})).catch(e=>{ocrPoolP=null;throw e}));
+}
+async function makeOcrPool(st){
   st('Đang khởi động bộ nhận dạng chữ tiếng Việt (OCR)…');
   // ghép lõi OCR + worker vào 1 blob (file:// không cho worker nạp thêm script)
   const src=document.getElementById('tessCore').textContent+'\n;self.TesseractCore=TesseractCore;\n'+document.getElementById('tessWorker').textContent;
   const workerPath=URL.createObjectURL(new Blob([src],{type:'text/javascript'})),corePath='bundled.js';
-  const n=ENV==='apk'?1:Math.max(1,Math.min(3,(navigator.hardwareConcurrency||2)-1));
+  const n=ocrThreads();
   const ws=[];
   for(let i=0;i<n;i++){
     const lang=b64ToBytes(document.getElementById('tessLang').textContent);
     ws.push(await Tesseract.createWorker([{code:'vie',data:lang}],1,{workerPath,corePath,workerBlobURL:false,cacheMethod:'none',gzip:true,logger:()=>{}}));
   }
   for(const w of ws)await w.setParameters({tessedit_pageseg_mode:'3',user_defined_dpi:'300'});
-  return ocrPool=ws;
+  ocrIdle.push(...ws);return ocrPool=ws;
+}
+// xếp hàng trang cần đọc: trang của văn bản đang thêm (ưu tiên) chạy trước trang đọc nền
+async function ocrRun(src,pageNo,prio){
+  await getOcrPool();
+  return new Promise((res,rej)=>{(prio?ocrQ.hi:ocrQ.lo).push({src,pageNo,res,rej});ocrPump()});
+}
+function ocrPump(){
+  while(ocrIdle.length&&(ocrQ.hi.length||ocrQ.lo.length)){
+    const w=ocrIdle.pop(),t=ocrQ.hi.shift()||ocrQ.lo.shift();
+    (async()=>{try{const img=await t.src();const r=await ocrCanvas(w,img,t.pageNo);if(img&&img.width){img.width=img.height=0}t.res(r)}catch(e){t.rej(e)}finally{ocrIdle.push(w);ocrPump()}})();
+  }
 }
 // sửa các lỗi OCR hay gặp trong văn bản hành chính, Đảng
 const OCR_FIX=[
@@ -1358,7 +1426,7 @@ const OCR_FIX=[
  [/(tổ chức|kỷ luật|chi bộ|sinh hoạt|tài chính)\s+đáng(?![\p{L}])/gu,'$1 đảng'],
  [/\bQUY\s*Đ[ỊI]NH\b/g,'QUY ĐỊNH'],[/\bQĐ\s*\/\s*TW\b/g,'QĐ/TW'],[/\bHD\s*\/\s*TW\b/g,'HD/TW'],
  [/quy ché(?![\p{L}])/gu,'quy chế'],[/tỉnh thần/g,'tinh thần'],[/(^|[^\p{L}])đân tộc/gu,'$1dân tộc'],
- [/Điêu (lệ|\d)/g,'Điều $1'],[/ĐIÊU (LỆ|\d)/g,'ĐIỀU $1'],[/HỆ THÔNG/g,'HỆ THỐNG'],[/(^|[^\p{L}])TÔ CHỨC/gu,'$1TỔ CHỨC'],[/(^|[^\p{L}])([tT])ô chức/gu,'$1$2ổ chức'],
+ [/(^|[^\p{L}])([kK])ý luật/gu,'$1$2ỷ luật'],[/(^|[^\p{L}])TÔNG (BÍ THƯ|KẾT|CỤC)/gu,'$1TỔNG $2'],[/(^|[^\p{L}])Tông (Bí thư|kết)/gu,'$1Tổng $2'],[/(^|[^\p{L}])KÝ LUẬT/gu,'$1KỶ LUẬT'], [/Điêu (lệ|\d)/g,'Điều $1'],[/ĐIÊU (LỆ|\d)/g,'ĐIỀU $1'],[/HỆ THÔNG/g,'HỆ THỐNG'],[/(^|[^\p{L}])TÔ CHỨC/gu,'$1TỔ CHỨC'],[/(^|[^\p{L}])([tT])ô chức/gu,'$1$2ổ chức'],
  [/thẳm quyền/g,'thẩm quyền'],[/Thẳm quyền/g,'Thẩm quyền'],[/(cơ sở|trong|tổ chức cơ sở|hoạt động)\s+đáng(?![\p{L}])/gu,'$1 đảng'],
  [/(^|[^\p{L}])Ủy ban Kiêm tra/gu,'$1Ủy ban Kiểm tra'],[/(^|[^\p{L}])([kK])iêm tra/gu,'$1$2iểm tra'],[/giám sắt/g,'giám sát'],
  [/^[Ll1|]\s*[-–.]?\s+(?=Những|Quy|Điều|Trách|Tổ chức|Hiệu lực)/,'I- '],[/^ll\s*[-–.]?\s+/,'II- '],
@@ -1373,15 +1441,14 @@ async function ocrCanvas(w,c,pageNo){
   return layoutPage(words,c.width,c.height,pageNo);
 }
 // sources: mảng hàm trả về canvas/ảnh cho từng trang
-async function ocrPages(sources,st){
-  const pool=await getOcrPool(st);const res=new Array(sources.length);let next=0,done=0;
-  st(`Đang nhận dạng chữ (OCR)… 0/${sources.length} trang`);
-  await Promise.all(pool.map(async w=>{
-    while(next<sources.length){const i=next++;const img=await sources[i]();res[i]=await ocrCanvas(w,img,i+1);done++;
-      st(`Đang nhận dạng chữ (OCR)… ${done}/${sources.length} trang`)}
-  }));
+async function ocrPages(sources,st,first=1,prio=true,label){
+  await getOcrPool(st);let done=0;const tot=label||sources.length;
+  st(`Đang nhận dạng chữ (OCR)… 0/${tot} trang`);
+  const res=await Promise.all(sources.map((s,i)=>ocrRun(s,first+i,prio).then(r=>{done++;st(`Đang nhận dạng chữ (OCR)… ${done}/${tot} trang`);return r})));
   return pagesToDoc(res);
 }
+// độ phân giải: trang 1 cao (đọc chính xác số, ngày, cơ quan ở phần đầu), các trang sau vừa đủ để đọc nhanh hơn
+const pageScale=n=>n===1?4.1:3.05;
 async function imgToCanvas(file){
   const bm=await createImageBitmap(file);let s=1;const minW=2400;if(bm.width<minW)s=minW/bm.width;if(bm.width*s>3600)s=3600/bm.width;
   const c=document.createElement('canvas');c.width=Math.round(bm.width*s);c.height=Math.round(bm.height*s);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(bm,0,0,c.width,c.height);return c}
@@ -1449,13 +1516,16 @@ drop.ondragover=e=>{e.preventDefault();drop.classList.add('ov')};drop.ondragleav
 drop.ondrop=e=>{e.preventDefault();drop.classList.remove('ov');if(!busy)startQueue([...e.dataTransfer.files])};
 $('#file').onchange=e=>{startQueue([...e.target.files]);e.target.value=''};
 function startQueue(files){queue=files;qi=0;if(files.length)processCur()}
-async function runOcr(){
-  if(curPdf){const n=curPdf.numPages;return ocrPages(Array.from({length:n},(_,i)=>()=>renderPage(curPdf,i+1,4.1)),st)}
-  return ocrPages([()=>imgToCanvas(curFile)],st);
+const OCR_FIRST=2,OCR_ALL_MAX=3;   // PDF dài hơn 3 trang: đọc trước 2 trang, phần còn lại đọc nền sau khi lưu
+let curOcr=null;                    // {done,total} của văn bản đang thêm
+async function runOcr(full){
+  if(curPdf){const n=curPdf.numPages,m=full||n<=OCR_ALL_MAX?n:OCR_FIRST;curOcr={done:m,total:n};
+    return ocrPages(Array.from({length:m},(_,i)=>()=>renderPage(curPdf,i+1,pageScale(i+1))),st,1,true,m<n?`${m} (đọc trước ${m}/${n})`:m)}
+  curOcr=null;return ocrPages([()=>imgToCanvas(curFile)],st);
 }
 function setBusy(b){busy=b;$('#btnSave').disabled=b;$('#btnReparse').disabled=b;$('#btnOcr').disabled=b;drop.style.opacity=b?.5:1}
 async function processCur(){
-  const f=queue[qi];curFile=f;curPdf=null;fillForm({});$('#fFile').value=f.name;$('#btnOcr').style.display='none';
+  const f=queue[qi];curFile=f;curPdf=null;curOcr=null;fillForm({});$('#fFile').value=f.name;$('#btnOcr').style.display='none';
   $('#queueInfo').textContent=queue.length>1?`File ${qi+1}/${queue.length}`:'';$('#btnSkip').style.display=queue.length>1?'':'none';
   const k=fileKind(f.name);
   if(!k){st('⚠ Định dạng file không hỗ trợ: '+f.name,true);return}
@@ -1472,16 +1542,81 @@ async function processCur(){
     if(queue[qi]!==f)return;
     setContent(doc.html,doc.text);applyMeta(getContent().text);
     $('#btnOcr').style.display=ocred||k==='pdf'?'':'none';$('#btnOcr').textContent=ocred?'🔤 Nhận dạng lại (OCR)':'🔤 Nhận dạng chữ (OCR)';
-    st(ocred?'✔ Đã nhận dạng chữ xong. Kiểm tra lại số, ngày, trích yếu và nội dung rồi bấm Lưu.':'✔ Đã đọc xong. Kiểm tra lại số, ngày, trích yếu rồi bấm Lưu.');
+    const part=curOcr&&curOcr.done<curOcr.total;
+    st(part?`✔ Đã đọc ${curOcr.done}/${curOcr.total} trang đầu để lấy số, ngày, trích yếu. Kiểm tra rồi bấm Lưu ngay – ${curOcr.total-curOcr.done} trang còn lại app tự đọc tiếp ở chế độ nền.`
+      :ocred?'✔ Đã nhận dạng chữ xong. Kiểm tra lại số, ngày, trích yếu và nội dung rồi bấm Lưu.':'✔ Đã đọc xong. Kiểm tra lại số, ngày, trích yếu rồi bấm Lưu.');
   }catch(e){console.error(e);st('⚠ Lỗi đọc file: '+(e&&e.message||e)+' – có thể nhập nội dung tay vào ô bên dưới.',true)}
   finally{setBusy(false)}
 }
 function applyMeta(text){const m=parseMeta(text);$('#fSo').value=m.so;$('#fNgay').value=fmtD(m.ngay);$('#fLoai').value=m.loai;$('#fCq').value=m.coQuan;$('#fTy').value=m.trichYeu}
 $('#btnNdClear').onclick=()=>{if(!squash(ndBox().textContent)||confirm('Xóa toàn bộ nội dung trong ô này để nhập lại?')){ndBox().innerHTML='';ndBox().focus()}};
 $('#btnReparse').onclick=()=>{applyMeta(getContent().text);st('Đã nhận lại thông tin từ nội dung.')};
-$('#btnOcr').onclick=async()=>{setBusy(true);try{const d=await runOcr();setContent(d.html,d.text);applyMeta(getContent().text);st('✔ Nhận dạng xong. Nên đọc soát lại nội dung trước khi lưu.')}catch(e){console.error(e);st('⚠ '+(e.message||e),true)}finally{setBusy(false)}};
+$('#btnOcr').onclick=async()=>{setBusy(true);try{const d=await runOcr(false);setContent(d.html,d.text);applyMeta(getContent().text);st('✔ Nhận dạng xong. Nên đọc soát lại nội dung trước khi lưu.')}catch(e){console.error(e);st('⚠ '+(e.message||e),true)}finally{setBusy(false)}};
 $('#btnSkip').onclick=()=>nextInQueue();
 function nextInQueue(){qi++;if(qi<queue.length)processCur();else{close('mAdd');runSearch()}}
+/* ---- Đọc chữ nền: các trang còn lại của PDF scan dài, đọc sau khi đã lưu ---- */
+let DEV_ID='';try{DEV_ID=localStorage.getItem('vb_dev')||'';if(!DEV_ID){DEV_ID=Math.random().toString(36).slice(2,10);localStorage.setItem('vb_dev',DEV_ID)}}catch(e){DEV_ID='x'}
+let bgBusy=false,bgCur=null;
+const bgPending=d=>d.ocrTotal&&(d.ocrDone||0)<d.ocrTotal;
+// máy khác trong LAN chỉ nhận làm tiếp khi máy đã lưu văn bản không cập nhật quá 3 phút
+const bgMine=d=>!d.ocrBy||d.ocrBy===DEV_ID||Date.now()-(d.upd||0)>180000;
+const bgNote=()=>bgCur?` · ⏳ đọc chữ nền ${bgCur.ocrDone}/${bgCur.ocrTotal} trang`:'';
+function bgOcrStart(){if(!bgBusy)bgOcrLoop().catch(e=>console.error(e))}
+async function bgOcrLoop(){
+  bgBusy=true;const S=store;
+  try{
+    while(store===S){
+      const d=docs.find(x=>bgPending(x)&&x.fileType==='pdf'&&x.filePath&&bgMine(x)&&!x._bgFail);if(!d)break;
+      try{await bgOcrDoc(d,S)}catch(e){console.error('Đọc nền lỗi',e);d._bgFail=true}
+    }
+  }finally{bgBusy=false;bgCur=null;if(store===S)refreshLabel()}
+}
+async function bgOcrDoc(d,S){
+  const blob=await S.getFile(d.filePath);if(!blob)throw new Error('Không tìm thấy file gốc');
+  const pdf=await pdfOpen(await blob.arrayBuffer());
+  if(d._pending){d.noiDung=(await S.getText(d.id,'txt'))||'';d._pending=false}
+  if(d.html===undefined)d.html=d.hasHtml?(await S.getText(d.id,'html'))||'':'';
+  d.ocrBy=DEV_ID;bgCur=d;refreshLabel();
+  const K=Math.max(2,(ocrPool?ocrPool.length:ocrThreads())*2);   // mỗi đợt đọc K trang rồi lưu bổ sung
+  while(store===S&&docs.includes(d)&&bgPending(d)){
+    const from=d.ocrDone+1,to=Math.min(d.ocrTotal,d.ocrDone+K);
+    const part=await Promise.all(Array.from({length:to-from+1},(_,i)=>ocrRun(()=>renderPage(pdf,from+i,pageScale(from+i)),from+i,false)));
+    if(store!==S||!docs.includes(d))return;
+    const doc=pagesToDoc(part);
+    d.html=(d.html||textToHtml(d.noiDung))+doc.html;d.noiDung=(d.noiDung?d.noiDung+'\n':'')+doc.text;d.ocrDone=to;
+    if(d.ocrDone>=d.ocrTotal){delete d.ocrDone;delete d.ocrTotal;delete d.ocrBy}
+    prep(d);await saveContent(d);await saveMeta(d);refreshLabel();
+    if(!$('#mView').classList.contains('on')&&!$('#mAdd').classList.contains('on')&&($('#q').value.trim()||$('#d').value.trim()))runSearch();
+  }
+  if(!bgPending(d))toast('✔ Đã đọc xong toàn bộ '+(d.so||'văn bản')+' – tìm được trong tất cả các trang');
+}
+/* ---- kiểm tra trùng văn bản ---- */
+const nKey=s=>norm(squash(s||''),true).replace(/[^a-z0-9]/g,'');
+function findDups(data,fileName){
+  const so=nKey(data.so),ty=nKey(data.trichYeu),fn=(fileName||'').toLowerCase(),out=[];
+  const body=nKey((data.noiDung||'').slice(0,1500));
+  for(const d of docs){const why=[];
+    if(so&&nKey(d.so)===so)why.push('trùng số văn bản');
+    if(ty&&data.ngay&&nKey(d.trichYeu)===ty&&d.ngay===data.ngay)why.push('trùng trích yếu và ngày phát hành');
+    else if(!so&&ty&&ty.length>15&&nKey(d.trichYeu)===ty)why.push('trùng trích yếu');
+    if(fn&&d.fileName&&d.fileName.toLowerCase()===fn)why.push('trùng tên file gốc');
+    if(!so&&!ty&&body.length>80&&!d._pending&&nKey((d.noiDung||'').slice(0,1500))===body)why.push('trùng nội dung');
+    if(why.length)out.push({d,why})}
+  return out;
+}
+function askDup(dups,data){
+  return new Promise(res=>{
+    const nm=[data.loai,data.so?'số '+data.so:'',data.ngay?'ngày '+fmtD(data.ngay):''].filter(Boolean).join(' ');
+    $('#dupBody').innerHTML=`<p style="margin:0 0 6px">Văn bản đang thêm: <b>${esc(nm||'(không số)')}</b><br><span style="color:var(--muted)">${esc(data.trichYeu||'')}</span></p>
+      <p style="margin:10px 0 0;font-weight:600">Trùng với ${dups.length} văn bản đã có trong hệ thống:</p>`+
+      dups.slice(0,5).map(x=>`<div class="dupitem"><div class="why">${esc(x.why.join(', '))}</div><b>${esc([x.d.loai,x.d.so].filter(Boolean).join(' ')||'(không số)')}</b> · ${fmtD(x.d.ngay)||'—'}<br>${esc(x.d.trichYeu||'')}<br><span style="color:var(--muted);font-size:13px">📁 ${esc(tmName(x.d.tm))}${x.d.fileName?' · '+esc(x.d.fileName):''}</span></div>`).join('')+
+      (dups.length>5?`<div class="more">+ ${dups.length-5} văn bản khác</div>`:'')+
+      `<p style="margin:12px 0 0">Bạn có muốn <b>tiếp tục lưu</b> văn bản này không?</p>`;
+    const done=v=>{close('mDup');$('#dupYes').onclick=$('#dupNo').onclick=null;res(v)};
+    $('#dupYes').onclick=()=>done(true);$('#dupNo').onclick=()=>done(false);
+    open('mDup');setTimeout(()=>$('#dupNo').focus(),50);
+  });
+}
 const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 $('#btnSave').onclick=async()=>{
   const ngayRaw=$('#fNgay').value.trim();const ngay=ngayRaw?toIso(ngayRaw):'';
@@ -1498,13 +1633,17 @@ $('#btnSave').onclick=async()=>{
       if(editing.filePath&&editing.tm!==data.tm){const b=await store.getFile(editing.filePath);if(b){const np=safeName(tmName(data.tm))+'/'+editing.filePath.split('/').pop();await store.putFile(np,b);await store.delFile(editing.filePath);editing.filePath=np}}
       Object.assign(editing,data);delete editing.mau;editing._pending=false;prep(editing);await saveContent(editing)}
     else{
-      const dup=data.so&&docs.find(d=>d.so&&d.so.toLowerCase()===data.so.toLowerCase());
-      if(dup&&!confirm(`Đã có văn bản số ${data.so}. Vẫn lưu thêm bản này?`)){btn.disabled=false;return}
+      const dups=findDups(data,curFile&&curFile.name);
+      if(dups.length&&!(await askDup(dups,data))){
+        btn.disabled=false;toast('✖ Không lưu văn bản trùng '+(data.so||''));
+        if(queue.length&&qi<queue.length-1)nextInQueue();else{close('mAdd');runSearch()}
+        return}
       const d={id:newId(),...data,addedAt:new Date().toISOString()};
+      if(curOcr&&curOcr.done<curOcr.total&&curFile){d.ocrDone=curOcr.done;d.ocrTotal=curOcr.total;d.ocrBy=DEV_ID}
       if(curFile){const k=fileKind(curFile.name);d.fileName=curFile.name;d.fileType=k==='doc'?'docx':k;d.filePath=safeName(tmName(data.tm))+'/'+d.id+'_'+curFile.name.replace(/[\\/:*?"<>|]/g,'_');st('Đang lưu file gốc…');await store.putFile(d.filePath,curFile)}
-      await saveContent(d);prep(d);docs.push(d);recentAdds.push(d);
+      await saveContent(d);prep(d);docs.push(d);recentAdds.push(d);noteAdd([d]);
     }
-    await saveMeta(editing||docs[docs.length-1]);refreshLabel();toast('✔ Đã lưu văn bản '+(data.so||'')+' vào thư mục '+tmName(data.tm));
+    await saveMeta(editing||docs[docs.length-1]);refreshLabel();if(!editing)bgOcrStart();toast('✔ Đã lưu văn bản '+(data.so||'')+' vào thư mục '+tmName(data.tm));
     if(editing){close('mAdd');runSearch()}else if(queue.length&&qi<queue.length-1)nextInQueue();else{close('mAdd');runSearch()}
   }catch(e){console.error(e);st('⚠ Không lưu được: '+e.message,true)}
   finally{btn.disabled=false}
@@ -1514,10 +1653,69 @@ $('#btnSave').onclick=async()=>{
 async function loadSamples(){
   const S=JSON.parse($('#samplesData').textContent);let n=0;
   for(const s of S){if(docs.some(d=>d.so===s.so))continue;const d={id:newId(),so:s.so,ngay:s.ngay,loai:s.loai,coQuan:s.coQuan,trichYeu:s.trichYeu,noiDung:s.text,mau:true,tm:folders.some(f=>f.id==='ktgs')?'ktgs':(folders[0]||{}).id,addedAt:new Date().toISOString()};await saveContent(d);prep(d);docs.push(d);recentAdds.push(d);n++}
-  if(n)await saveMeta(...docs.slice(-n));refreshLabel();runSearch();toast(n?`Đã nạp ${n} văn bản mẫu về kiểm tra, giám sát, thanh tra`:'Các văn bản mẫu đã có sẵn');
+  if(n){await saveMeta(...docs.slice(-n));noteAdd(docs.slice(-n),'văn bản mẫu')}refreshLabel();runSearch();toast(n?`Đã nạp ${n} văn bản mẫu về kiểm tra, giám sát, thanh tra`:'Các văn bản mẫu đã có sẵn');
 }
 $('#btnSample').onclick=()=>store?loadSamples():showStoreDialog(true);
 window.openAdd=openAdd;window.loadSamples=loadSamples;
+
+/* ============ Sao lưu / Khôi phục ============ */
+const bakMsg=(t,err)=>{$('#bakMsg').textContent=t;$('#bakMsg').className='status'+(err?' err':'')};
+let bakBusy=false;
+$('#btnBak').onclick=()=>{if(!store){showStoreDialog(true);return}if(!bakBusy)bakMsg('');open('mBak')};
+const stamp=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`};
+const blobToB64Any=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(b)});
+$('#bakMake').onclick=async()=>{
+  if(bakBusy)return;bakBusy=true;$('#bakMake').disabled=$('#bakLoad').disabled=true;
+  try{
+    const z=new JSZip();const n=docs.length;let i=0,miss=0;
+    z.file('du_lieu.json',JSON.stringify(docs.map(clean)));z.file('thu_muc.json',JSON.stringify(folders));
+    z.file('THONG_TIN.txt','Ban sao luu Tim Kiem Van Ban\nNgay: '+new Date().toLocaleString('vi-VN')+'\nSo van ban: '+n+'\n');
+    for(const d of docs){i++;if(i%5===0||i===n)bakMsg(`Đang gom dữ liệu… ${i}/${n} văn bản`);
+      const t=d._pending?await store.getText(d.id,'txt'):d.noiDung;z.file('noidung/'+d.id+'.txt',t||'');
+      if(d.hasHtml){const h=typeof d.html==='string'&&d.html?d.html:await store.getText(d.id,'html');if(h)z.file('noidung/'+d.id+'.html',h)}
+      if(d.filePath){const b=await store.getFile(d.filePath);if(b)z.file('files/'+d.filePath,b,{compression:'STORE'});else miss++}}
+    bakMsg('Đang nén file sao lưu…');
+    const blob=await z.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:4}},m=>bakMsg(`Đang nén file sao lưu… ${Math.round(m.percent)}%`));
+    const name=`SaoLuu_VanBan_${stamp()}.zip`,mb=(blob.size/1048576).toFixed(1);
+    let where='';
+    if(ENV==='exe'){where=await electronAPI.saveAs(name,new Uint8Array(await blob.arrayBuffer()));if(!where){bakMsg('Đã hủy lưu file sao lưu.');return}}
+    else if(ENV==='apk'){const FS=(window.Capacitor.Plugins&&window.Capacitor.Plugins.Filesystem)||window.Capacitor.registerPlugin('Filesystem');
+      try{await FS.requestPermissions()}catch(e){}
+      await FS.writeFile({path:'VanBanLuu_SaoLuu/'+name,directory:'DOCUMENTS',data:await blobToB64Any(blob),recursive:true});where='Documents/VanBanLuu_SaoLuu/'+name}
+    else{const u=URL.createObjectURL(blob),x=document.createElement('a');x.href=u;x.download=name;document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);where='thư mục Tải về (Downloads): '+name}
+    bakMsg(`✔ Đã sao lưu ${n} văn bản (${mb} MB) vào: ${where}${miss?` · ⚠ ${miss} văn bản không tìm thấy file gốc`:''}`);
+  }catch(e){console.error(e);bakMsg('⚠ Không tạo được bản sao lưu: '+(e.message||e)+(String(e).includes('memory')||String(e).includes('Array buffer')?' – kho quá lớn, trên máy tính hãy chép trực tiếp thư mục VanBanLuu.':''),true)}
+  finally{bakBusy=false;$('#bakMake').disabled=$('#bakLoad').disabled=false}
+};
+$('#bakLoad').onclick=()=>{if(!bakBusy)$('#bakFile').click()};
+$('#bakFile').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f||bakBusy)return;
+  bakBusy=true;$('#bakMake').disabled=$('#bakLoad').disabled=true;
+  try{
+    bakMsg('Đang đọc file sao lưu…');
+    const z=await JSZip.loadAsync(f);const dj=z.file('du_lieu.json');if(!dj)throw new Error('File này không phải bản sao lưu của Tìm Kiếm Văn Bản');
+    const list=JSON.parse(await dj.async('string'));const tj=z.file('thu_muc.json');const tms=tj?JSON.parse(await tj.async('string')):[];
+    // gộp thư mục: thêm thư mục còn thiếu
+    let fAdd=0;for(const t of tms)if(t&&t.id&&!folders.some(x=>x.id===t.id)){folders.push({id:t.id,name:t.name});fAdd++}
+    if(fAdd)await saveFolders();
+    const have=new Set(docs.map(d=>d.id));const add=list.filter(d=>d&&d.id&&!have.has(d.id));let i=0;const done=[];
+    for(const m of add){i++;bakMsg(`Đang khôi phục… ${i}/${add.length} văn bản`);
+      const tx=z.file('noidung/'+m.id+'.txt'),hx=z.file('noidung/'+m.id+'.html');
+      await store.putText(m.id,'txt',tx?await tx.async('string'):'');
+      if(hx)await store.putText(m.id,'html',await hx.async('string'));
+      if(m.filePath){const fx=z.file('files/'+m.filePath);if(fx)await store.putFile(m.filePath,await fx.async('blob'));}
+      done.push(m);
+      if(done.length>=25){await bakFlush(done)}}
+    await bakFlush(done);
+    bakMsg(`✔ Đã khôi phục ${add.length} văn bản${list.length-add.length?`, bỏ qua ${list.length-add.length} văn bản đã có`:''}${fAdd?`, thêm ${fAdd} thư mục`:''}. Đang nạp lại kho…`);
+    await afterStore();open('mBak');
+    bakMsg(`✔ Khôi phục xong: thêm ${add.length} văn bản${list.length-add.length?`, bỏ qua ${list.length-add.length} văn bản đã có`:''}${fAdd?`, thêm ${fAdd} thư mục`:''}.`);
+  }catch(err){console.error(err);bakMsg('⚠ Không khôi phục được: '+(err.message||err),true)}
+  finally{bakBusy=false;$('#bakMake').disabled=$('#bakLoad').disabled=false}
+};
+// ghi danh mục theo từng đợt để nếu bị ngắt giữa chừng vẫn giữ được phần đã khôi phục
+async function bakFlush(arr){if(!arr.length)return;const part=arr.splice(0);
+  if(store.applyMeta)await store.applyMeta(part,[]);else{const cur=await store.load();const ids=new Set(cur.map(x=>x.id));await store.save(cur.concat(part.filter(x=>!ids.has(x.id))))}}
 
 /* ============ Mạng LAN ============ */
 const LAN_PORT=8989;
@@ -1595,7 +1793,7 @@ function lanStHtml(L){
 $('#btnLan').onclick=()=>openLan();
 
 /* ============ Khởi động ============ */
-document.addEventListener('keydown',e=>{if(e.key==='Escape')['mView','mAdd','mTm','mLan'].forEach(close)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#mDup').classList.contains('on')){$('#dupNo').click();return}['mView','mAdd','mTm','mLan'].forEach(close);if(!bakBusy)close('mBak')}});
 (async function boot(){
   // mở bằng trình duyệt từ máy chủ LAN (http://IP:cổng) -> tự dùng dữ liệu máy chủ
   if(ENV==='web'&&location.protocol.startsWith('http')){
